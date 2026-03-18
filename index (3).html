@@ -1,0 +1,1060 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0">
+<title>RIGOR 库存管理系统</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Noto Sans SC',system-ui,sans-serif;background:#0c0d12;color:#e5e7eb;min-height:100vh;-webkit-tap-highlight-color:transparent}
+::-webkit-scrollbar{width:5px}::-webkit-scrollbar-thumb{background:#333;border-radius:3px}
+input,select,textarea,button{font-family:inherit;outline:none}
+
+/* ── Layout container ── */
+.app-wrap{max-width:960px;margin:0 auto;padding-bottom:68px}
+
+/* ── Components ── */
+.bar{background:#111318ee;border-bottom:1px solid #1e2130;padding:14px 20px;position:sticky;top:0;z-index:20;backdrop-filter:blur(12px)}
+.inp{width:100%;padding:10px 14px;border-radius:8px;border:1px solid #2a2e3e;background:#181b24;color:#e5e7eb;font-size:14px}
+.inp:focus{border-color:#6366f1}
+.card{background:#151821;border:1px solid #1e2130;border-radius:12px;padding:14px;margin-bottom:10px;transition:border-color .15s}
+.card:hover{border-color:#2a2e3e}
+.btn{padding:11px 20px;border-radius:8px;border:none;color:#fff;font-size:14px;font-weight:600;cursor:pointer;width:100%;transition:opacity .15s}
+.btn:hover{opacity:.9}
+.sm{padding:6px 14px;border-radius:6px;border:none;color:#fff;font-size:12px;font-weight:500;cursor:pointer;transition:opacity .15s}
+.sm:hover{opacity:.85}
+.nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:960px;background:#111318ee;border-top:1px solid #1e2130;display:flex;z-index:30;backdrop-filter:blur(12px)}
+.nav button{flex:1;padding:10px 0 8px;border:none;background:transparent;color:#4b5563;font-size:11px;display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;transition:color .15s}
+.nav button.on{color:#818cf8}
+.nav button span:first-child{font-size:18px}
+.tag{display:inline-block;padding:2px 8px;border-radius:4px;font-size:10px}
+.item{padding:12px 10px;border-bottom:1px solid #13161e;cursor:pointer;display:flex;align-items:center;gap:10px;transition:background .12s}
+.item:hover{background:#1a1d27}
+.qcg{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.qcb{padding:10px 6px;border-radius:8px;border:1px solid #2a2e3e;background:#111318;color:#6b7280;font-size:11px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;transition:all .15s}
+.qcb:hover{border-color:#4b5563}
+.qcb.on{border-color:#34d39940;background:#0d542b20;color:#34d399}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:50;display:flex;align-items:center;justify-content:center}
+.modal{background:#1a1d27;border-radius:16px;width:90%;max-width:480px;padding:24px;max-height:85vh;overflow-y:auto}
+.path-box{background:#0d1117;border:1px solid #1e2130;border-radius:6px;padding:10px 12px;font-family:'Cascadia Code',monospace;font-size:12px;color:#7dd3fc;word-break:break-all;margin:4px 0}
+.copy-btn{background:#1e3a5f;border:1px solid #2563eb40;color:#60a5fa;padding:4px 12px;border-radius:4px;font-size:11px;cursor:pointer;transition:background .15s}
+.copy-btn:hover{background:#2563eb}
+.form-row{margin-bottom:12px}
+.form-label{font-size:12px;color:#6b7280;margin-bottom:4px}
+.edit-btn{background:none;border:1px solid #2a2e3e;color:#9ca3af;padding:5px 12px;border-radius:6px;font-size:11px;cursor:pointer;transition:all .15s}
+.edit-btn:hover{border-color:#6366f1;color:#818cf8}
+.del-btn{background:none;border:1px solid #5c1a1a;color:#f87171;padding:5px 12px;border-radius:6px;font-size:11px;cursor:pointer;transition:all .15s}
+.del-btn:hover{background:#5c1a1a}
+
+/* ── Desktop: wider layout, bigger text, grid layouts ── */
+@media(min-width:768px){
+  .app-wrap{padding:0 24px 80px}
+  .bar{padding:16px 24px;border-radius:0 0 12px 12px;margin:0 -24px}
+  .nav button{font-size:12px;padding:12px 0 10px;flex-direction:row;gap:6px}
+  .nav button span:first-child{font-size:16px}
+  .inp{font-size:15px;padding:11px 16px}
+  .btn{font-size:15px;padding:12px 24px}
+  .sm{font-size:13px;padding:7px 16px}
+  .tag{font-size:11px;padding:2px 10px}
+  .item{padding:14px 12px;gap:12px}
+  .card{padding:18px;margin-bottom:12px;border-radius:14px}
+  .qcg{grid-template-columns:repeat(6,1fr)}
+  .qcb{padding:12px 8px;font-size:12px}
+  .form-row{margin-bottom:14px}
+  .form-label{font-size:13px}
+  .path-box{font-size:13px}
+  .modal{padding:30px}
+  /* Two-column grids on desktop */
+  .dash-series{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+  .dash-stats{grid-template-columns:repeat(4,1fr)!important}
+  .dash-pipe{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+  .detail-info{grid-template-columns:1fr 1fr 1fr 1fr!important}
+  .sub-cat-grid{grid-template-columns:repeat(3,1fr)!important}
+  .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 16px}
+}
+
+/* ── Mobile: compact ── */
+@media(max-width:767px){
+  .app-wrap{max-width:540px;margin:0 auto}
+  .overlay{align-items:flex-end}
+  .modal{border-radius:16px 16px 0 0;width:100%;max-width:540px}
+}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+</head>
+<body>
+<!-- LOGIN SCREEN -->
+<div id="loginScreen" style="position:fixed;inset:0;background:#0c0d12;z-index:9999;display:flex;align-items:center;justify-content:center">
+  <div style="width:90%;max-width:360px;text-align:center">
+    <div style="width:64px;height:64px;border-radius:18px;background:linear-gradient(135deg,#6366f1,#8b5cf6);display:flex;align-items:center;justify-content:center;font-size:30px;color:#fff;margin:0 auto 16px">⬡</div>
+    <div style="font-size:22px;font-weight:700;color:#fff;margin-bottom:4px">RIGOR 库存管理</div>
+    <div style="font-size:13px;color:#6b7280;margin-bottom:24px">请输入访问密码</div>
+    <input type="password" id="loginPwd" placeholder="输入密码" style="width:100%;padding:12px 16px;border-radius:10px;border:1px solid #2a2e3e;background:#181b24;color:#e5e7eb;font-size:15px;text-align:center;outline:none;margin-bottom:12px;font-family:inherit" onkeydown="if(event.key==='Enter')checkLogin()">
+    <button onclick="checkLogin()" style="width:100%;padding:12px;border-radius:10px;border:none;background:#6366f1;color:#fff;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit">进入系统</button>
+    <div id="loginErr" style="font-size:12px;color:#f87171;margin-top:10px;display:none">密码错误，请重试</div>
+    <div style="font-size:10px;color:#374151;margin-top:20px">如需修改密码，请在「☁ 同步」页面设置</div>
+  </div>
+</div>
+<div id="app" class="app-wrap" style="display:none"></div>
+<script>
+// ═══ PASSWORD PROTECTION ═══
+const PWD_KEY="RIGOR_PWD";
+const DEFAULT_PWD_HASH="a3f5b2c8d1e4"; // default: rigor2026
+async function hashPwd(pwd){const enc=new TextEncoder().encode(pwd);const buf=await crypto.subtle.digest("SHA-256",enc);return Array.from(new Uint8Array(buf)).slice(0,6).map(b=>b.toString(16).padStart(2,"0")).join("");}
+function getStoredHash(){return localStorage.getItem(PWD_KEY)||DEFAULT_PWD_HASH;}
+async function checkLogin(){
+  const pwd=document.getElementById("loginPwd").value;
+  if(!pwd){document.getElementById("loginErr").style.display="block";document.getElementById("loginErr").textContent="请输入密码";return;}
+  const h=await hashPwd(pwd);
+  if(h===getStoredHash()){
+    sessionStorage.setItem("RIGOR_AUTH","1");
+    document.getElementById("loginScreen").style.display="none";
+    document.getElementById("app").style.display="block";
+  }else{
+    document.getElementById("loginErr").style.display="block";
+    document.getElementById("loginErr").textContent="密码错误，请重试";
+    document.getElementById("loginPwd").value="";document.getElementById("loginPwd").focus();
+  }
+}
+async function changePwd(){
+  const cur=document.getElementById("curPwd").value;
+  const nw=document.getElementById("newPwd").value;
+  const nw2=document.getElementById("newPwd2").value;
+  if(!cur||!nw){alert("请填写当前密码和新密码");return;}
+  const ch=await hashPwd(cur);
+  if(ch!==getStoredHash()){alert("当前密码错误");return;}
+  if(nw!==nw2){alert("两次新密码不一致");return;}
+  if(nw.length<4){alert("密码至少4位");return;}
+  const nh=await hashPwd(nw);
+  localStorage.setItem(PWD_KEY,nh);
+  document.getElementById("pwdOv").remove();
+  alert("密码修改成功！下次登录使用新密码。");
+}
+function openChangePwd(){
+  const ov=document.createElement("div");ov.className="overlay";ov.id="pwdOv";
+  ov.onclick=e=>{if(e.target===ov)ov.remove();};
+  ov.innerHTML=`<div class="modal" style="padding:24px">
+    <div style="font-size:16px;font-weight:700;color:#fff;margin-bottom:16px">🔒 修改登录密码</div>
+    <div class="form-row"><div class="form-label">当前密码</div><input class="inp" type="password" id="curPwd" placeholder="输入当前密码"></div>
+    <div class="form-row"><div class="form-label">新密码</div><input class="inp" type="password" id="newPwd" placeholder="输入新密码(至少4位)"></div>
+    <div class="form-row"><div class="form-label">确认新密码</div><input class="inp" type="password" id="newPwd2" placeholder="再次输入新密码"></div>
+    <div style="display:flex;gap:10px;margin-top:6px">
+      <button class="btn" style="background:#374151;flex:1" onclick="document.getElementById('pwdOv').remove()">取消</button>
+      <button class="btn" style="background:#f59e0b;flex:1" onclick="changePwd()">确认修改</button>
+    </div>
+  </div>`;
+  document.body.appendChild(ov);
+}
+// Auto-login if session still valid
+if(sessionStorage.getItem("RIGOR_AUTH")==="1"){
+  document.getElementById("loginScreen").style.display="none";
+  document.getElementById("app").style.display="block";
+}
+// Init default password hash on first load
+(async()=>{if(!localStorage.getItem(PWD_KEY)){const h=await hashPwd("rigor2026");localStorage.setItem(PWD_KEY,h);}})();
+
+const RAW=[{"c":"PS微球","s":"20nm","f":"","m":"PS01002","k":"PS01N020NA","b":"20250706","q":"112","n":112,"t":"正常","o":""},{"c":"PS微球","s":"30nm","f":"","m":"PS01003","k":"PS01N030NA","b":"20250705","q":"89","n":89,"t":"正常","o":""},{"c":"PS微球","s":"50nm","f":"","m":"PS01005","k":"PS01N050NA","b":"20250219","q":"19+5+38","n":62,"t":"正常","o":""},{"c":"PS微球","s":"80nm","f":"","m":"PS01008","k":"PS01N080NA","b":"20250707","q":"65","n":65,"t":"正常","o":""},{"c":"PS微球","s":"100nm","f":"","m":"PS01010","k":"PS01N100NA","b":"20250716","q":"159+4","n":163,"t":"正常","o":""},{"c":"PS微球","s":"150nm","f":"","m":"PS01015","k":"PS01N150NA","b":"20200512","q":"33","n":33,"t":"正常","o":""},{"c":"PS微球","s":"200nm","f":"","m":"PS01020","k":"PS01N200NA","b":"20250312","q":"109+200","n":309,"t":"正常","o":"100-200mL未处理"},{"c":"PS微球","s":"300nm","f":"","m":"PS01030","k":"PS01N300NA","b":"20250820","q":"194+7","n":201,"t":"正常","o":""},{"c":"PS微球","s":"400nm","f":"","m":"PS01040","k":"PS01N400NA","b":"20220725","q":"27","n":27,"t":"正常","o":""},{"c":"PS微球","s":"500nm","f":"","m":"PS01050","k":"PS01N500NA","b":"20250825","q":"186+＞100","n":286,"t":"正常","o":""},{"c":"PS微球","s":"600nm","f":"","m":"PS01060","k":"PS01N600NA","b":"20210617","q":"20","n":20,"t":"正常","o":""},{"c":"PS微球","s":"700nm","f":"","m":"PS01070","k":"PS01N700NA","b":"20210822","q":"＞100","n":100,"t":"正常","o":""},{"c":"PS微球","s":"800nm","f":"","m":"PS01080","k":"PS01N800NA","b":"20210819","q":"46","n":46,"t":"正常","o":""},{"c":"PS微球","s":"900nm","f":"","m":"PS01090","k":"PS01N900NA","b":"20220917","q":"＞100","n":100,"t":"正常","o":""},{"c":"PS微球","s":"1000nm/1um","f":"","m":"PS02010","k":"PS01U001NA","b":"20250402","q":"12","n":12,"t":"正常","o":""},{"c":"PS微球","s":"2um","f":"","m":"PS02020","k":"PS01U002NA","b":"20230530","q":"1","n":1,"t":"正常","o":""},{"c":"PS微球","s":"3um","f":"","m":"PS02030","k":"PS01U003NA","b":"20250218","q":"125","n":125,"t":"正常","o":""},{"c":"PS微球","s":"4um","f":"","m":"PS02040","k":"PS01U004NA","b":"20230223","q":"＞100","n":100,"t":"正常","o":""},{"c":"PS微球","s":"5um","f":"","m":"PS02050","k":"PS01U005NA","b":"20250307","q":"88+58","n":146,"t":"正常","o":""},{"c":"PS微球","s":"6um","f":"","m":"PS02060","k":"PS01U006NA","b":"20210805","q":"＞100","n":100,"t":"正常","o":""},{"c":"PS微球","s":"7um","f":"","m":"PS02070","k":"PS01U007NA","b":"20200513","q":"7","n":7,"t":"正常","o":""},{"c":"PS微球","s":"8um","f":"","m":"PS02080","k":"PS01U008NA","b":"20210510","q":"＞100","n":100,"t":"正常","o":""},{"c":"PS微球","s":"9um","f":"","m":"PS02090","k":"PS01U009NA","b":"20220905","q":"19","n":19,"t":"正常","o":"可能有孔"},{"c":"PS微球","s":"10um","f":"","m":"PS02100","k":"PS01U010NA","b":"20240314","q":"72+200","n":272,"t":"正常","o":""},{"c":"PS微球","s":"12um","f":"","m":"PS02120","k":"PS01U012NA","b":"20240306","q":"281","n":281,"t":"正常","o":""},{"c":"PS微球","s":"15um","f":"","m":"PS02150","k":"PS01U015NA","b":"20250326","q":"194","n":194,"t":"正常","o":""},{"c":"PS微球","s":"20um","f":"","m":"PS02200","k":"PS01U020NA","b":"20210921","q":"11+10","n":21,"t":"正常","o":""},{"c":"PS微球","s":"25um","f":"","m":"PS02500","k":"PS01U025NA","b":"20190904","q":"49","n":49,"t":"正常","o":""},{"c":"PS微球","s":"30um","f":"","m":"PS02300","k":"PS01U030NA","b":"20220629","q":"38","n":38,"t":"正常","o":""},{"c":"PS微球","s":"35um","f":"","m":"PS02350","k":"PS01U035NA","b":"20240815","q":"50","n":50,"t":"正常","o":""},{"c":"PS微球","s":"40um","f":"","m":"PS02400","k":"PS01U040NA","b":"20220817","q":"17","n":17,"t":"正常","o":""},{"c":"PS微球","s":"45um","f":"","m":"PS02450","k":"PS01U045NA","b":"20240822","q":"100","n":100,"t":"正常","o":""},{"c":"PS微球","s":"50um","f":"","m":"PS02500","k":"PS01U050NA","b":"20210927","q":"7+99","n":106,"t":"正常","o":""},{"c":"PS微球","s":"60um","f":"","m":"PS02600","k":"PS01U060NA","b":"20210405","q":"1+3+120","n":124,"t":"低库存","o":""},{"c":"PS微球","s":"70um","f":"","m":"PS02700","k":"PS01U070NA","b":"20240124","q":"30","n":30,"t":"正常","o":""},{"c":"PS微球","s":"80um","f":"","m":"PS02800","k":"PS01U080NA","b":"","q":"","n":0,"t":"缺货","o":""},{"c":"PS微球","s":"90um","f":"","m":"PS02900","k":"PS01U090NA","b":"","q":"","n":0,"t":"缺货","o":""},{"c":"PS微球","s":"100um","f":"","m":"PS01000","k":"PS01U100NA","b":"20211130","q":"2","n":2,"t":"正常","o":""},{"c":"PS微球","s":"150um","f":"","m":"PS01500","k":"PS01U150NA","b":"20251020","q":"3","n":3,"t":"低库存","o":""},{"c":"PS微球","s":"200um","f":"","m":"PS02000","k":"PS01U200NA","b":"","q":"3","n":3,"t":"待处理","o":""},{"c":"PS微球","s":"300um","f":"","m":"PS03000","k":"PS01U300NA","b":"20240326","q":"3","n":3,"t":"低库存","o":""},{"c":"PS微球","s":"400um","f":"","m":"PS04000","k":"PS01U400NA","b":"20230728","q":"15","n":15,"t":"正常","o":""},{"c":"PS微球","s":"500um","f":"","m":"PS05000","k":"PS01U500NA","b":"20240302","q":"1","n":1,"t":"缺货","o":""},{"c":"PS微球","s":"600um","f":"","m":"PS06000","k":"PS01U600NA","b":"20221127","q":"14","n":14,"t":"正常","o":""},{"c":"PS微球","s":"700um","f":"","m":"PS07000","k":"PS01U700NA","b":"20250314","q":"9","n":9,"t":"缺货","o":""},{"c":"PS微球","s":"800um","f":"","m":"PS08000","k":"PS01U800NA","b":"20250315","q":"9","n":9,"t":"低库存","o":""},{"c":"PS微球","s":"900um","f":"","m":"PS09000","k":"PS01U900NA","b":"","q":"","n":0,"t":"低库存","o":""},{"c":"PS微球","s":"1000um","f":"","m":"PS10000","k":"PS01U01KNA","b":"20231213","q":"10+7","n":17,"t":"正常","o":""},{"c":"PS微球","s":"1.5um","f":"","m":"PS02015","k":"PS01U0015NA","b":"20230508","q":"34","n":34,"t":"正常","o":""},{"c":"PS微球","s":"120nm","f":"","m":"PS01012","k":"PS01N120NA","b":"20250311","q":"14","n":14,"t":"正常","o":""},{"c":"PS微球","s":"180nm","f":"","m":"PS01018","k":"PS01N180NA","b":"20220111","q":"18","n":18,"t":"正常","o":""},{"c":"PS微球","s":"250nm","f":"","m":"PS01025","k":"PS01N250NA","b":"20200805","q":"99","n":99,"t":"正常","o":""},{"c":"PS微球","s":"350nm","f":"","m":"PS01035","k":"PS01N350NA","b":"20200718","q":"＞50","n":50,"t":"正常","o":""},{"c":"PS微球","s":"280nm","f":"","m":"PS01028","k":"PS01N280NA","b":"20221216","q":"＞50","n":50,"t":"正常","o":""},{"c":"PS微球","s":"750nm","f":"","m":"PS01075","k":"PS01N750NA","b":"20230427","q":"＞50","n":50,"t":"正常","o":""},{"c":"PS微球","s":"2.8um","f":"","m":"PS02028","k":"PS01U0028NA","b":"20200919","q":"＞50","n":50,"t":"正常","o":""},{"c":"PS微球","s":"6.5um","f":"","m":"PS02065","k":"PS01U0065NA","b":"20230814","q":"＞50","n":50,"t":"正常","o":""},{"c":"PS微球","s":"2mm","f":"","m":"PS02000","k":"PS01U02KNA","b":"20240826","q":"19","n":19,"t":"正常","o":""},{"c":"PMMA微球","s":"20nm","f":"","m":"PMMA01002","k":"PA01N020NA","b":"","q":"","n":0,"t":"缺货","o":""},{"c":"PMMA微球","s":"30nm","f":"","m":"PMMA01003","k":"PA01N030NA","b":"","q":"","n":0,"t":"缺货","o":""},{"c":"PMMA微球","s":"50nm","f":"","m":"PMMA01005","k":"PA01N050NA","b":"20221008","q":"32","n":32,"t":"正常","o":""},{"c":"PMMA微球","s":"80nm","f":"","m":"PMMA01008","k":"PA01N080NA","b":"","q":"","n":0,"t":"缺货","o":""},{"c":"PMMA微球","s":"100nm","f":"","m":"PMMA01010","k":"PA01N100NA","b":"20211216","q":"40+50","n":90,"t":"正常","o":""},{"c":"PMMA微球","s":"200nm","f":"","m":"PMMA01020","k":"PA01N200NA","b":"20220723","q":"45","n":45,"t":"正常","o":""},{"c":"PMMA微球","s":"300nm","f":"","m":"PMMA01030","k":"PA01N300NA","b":"20220725","q":"34","n":34,"t":"正常","o":""},{"c":"PMMA微球","s":"400nm","f":"","m":"PMMA01040","k":"PA01N400NA","b":"20220426","q":"49","n":49,"t":"正常","o":""},{"c":"PMMA微球","s":"500nm","f":"","m":"PMMA01050","k":"PA01N500NA","b":"20220421","q":"56","n":56,"t":"正常","o":""},{"c":"PMMA微球","s":"600nm","f":"","m":"PMMA01060","k":"PA01N600NA","b":"20220418","q":"50","n":50,"t":"正常","o":""},{"c":"PMMA微球","s":"700nm","f":"","m":"PMMA01070","k":"PA01N700NA","b":"20220429","q":"50","n":50,"t":"正常","o":""},{"c":"PMMA微球","s":"800nm","f":"","m":"PMMA01080","k":"PA01N800NA","b":"20220511","q":"49","n":49,"t":"正常","o":""},{"c":"PMMA微球","s":"1000nm/1um","f":"","m":"PMMA02010","k":"PA01U001NA","b":"20220730","q":"4+50","n":54,"t":"待处理","o":""},{"c":"PMMA微球","s":"2um","f":"","m":"PMMA02020","k":"PA01U002NA","b":"20240327","q":"17+20","n":37,"t":"正常","o":""},{"c":"PMMA微球","s":"3um","f":"","m":"PMMA02030","k":"PA01U003NA","b":"20231204","q":"29","n":29,"t":"正常","o":""},{"c":"PMMA微球","s":"4um","f":"","m":"PMMA02040","k":"PA01U004NA","b":"20250507","q":"29","n":29,"t":"正常","o":""},{"c":"PMMA微球","s":"5um","f":"","m":"PMMA02050","k":"PA01U005NA","b":"20240401","q":"36","n":36,"t":"正常","o":""},{"c":"PMMA微球","s":"8um","f":"","m":"PMMA02080","k":"PA01U008NA","b":"20250627","q":"99","n":99,"t":"正常","o":""},{"c":"PMMA微球","s":"10um","f":"","m":"PMMA02100","k":"PA01U010NA","b":"20221206","q":"28+3","n":31,"t":"正常","o":""},{"c":"PMMA微球","s":"15um","f":"","m":"PMMA02150","k":"PA01U015NA","b":"20250703","q":"30","n":30,"t":"正常","o":""},{"c":"PMMA微球","s":"20um","f":"","m":"PMMA02200","k":"PA01U020NA","b":"20240307","q":"192","n":192,"t":"正常","o":""},{"c":"PMMA微球","s":"25um","f":"","m":"PMMA02500","k":"PA01U025NA","b":"","q":"","n":0,"t":"缺货","o":""},{"c":"PMMA微球","s":"30um","f":"","m":"PMMA02300","k":"PA01U030NA","b":"20240412","q":"42","n":42,"t":"正常","o":""},{"c":"PMMA微球","s":"40um","f":"","m":"PMMA02400","k":"PA01U040NA","b":"20240326","q":"100","n":100,"t":"正常","o":""},{"c":"PMMA微球","s":"50um","f":"","m":"PMMA02500","k":"PA01U050NA","b":"20190925","q":"20","n":20,"t":"正常","o":""},{"c":"PMMA微球","s":"60um","f":"","m":"PMMA02600","k":"PA01U060NA","b":"","q":"","n":0,"t":"缺货","o":""},{"c":"PMMA微球","s":"80um","f":"","m":"PMMA02800","k":"PA01U080NA","b":"","q":"","n":0,"t":"缺货","o":""},{"c":"PMMA微球","s":"100um","f":"","m":"PMMA01000","k":"PA01U100NA","b":"20240506","q":"70","n":70,"t":"正常","o":""},{"c":"PMMA微球","s":"200um","f":"","m":"PMMA02000","k":"PA01U200NA","b":"","q":"","n":0,"t":"缺货","o":""},{"c":"PMMA微球","s":"300um","f":"","m":"PMMA03000","k":"PA01U300NA","b":"20250312","q":"3","n":3,"t":"低库存","o":""},{"c":"PMMA微球","s":"400um","f":"","m":"PMMA04000","k":"PA01U400NA","b":"20250313","q":"5","n":5,"t":"低库存","o":""},{"c":"PMMA微球","s":"500um","f":"","m":"PMMA05000","k":"PA01U500NA","b":"","q":"","n":0,"t":"缺货","o":""},{"c":"PMMA微球","s":"800um","f":"","m":"PMMA08000","k":"PA01U800NA","b":"20240703","q":"2","n":2,"t":"缺货","o":""},{"c":"PMMA微球","s":"1000um","f":"","m":"PMMA10000","k":"PA01U01KNA","b":"","q":"","n":0,"t":"缺货","o":""},{"c":"PMMA微球","s":"150nm","f":"","m":"PMMA01015","k":"PA01N150NA","b":"20201029","q":"49","n":49,"t":"正常","o":""},{"c":"PMMA微球","s":"180nm","f":"","m":"PMMA01018","k":"PA01N180NA","b":"20201015","q":"50","n":50,"t":"正常","o":""},{"c":"PMMA微球","s":"220nm","f":"","m":"PMMA01022","k":"PA01N220NA","b":"20220422","q":"50","n":50,"t":"正常","o":""},{"c":"PMMA微球","s":"280nm","f":"","m":"PMMA01028","k":"PA01N280NA","b":"20220722","q":"50","n":50,"t":"正常","o":""},{"c":"PMMA微球","s":"7um","f":"","m":"PMMA02070","k":"PA01U007NA","b":"20220923","q":"50","n":50,"t":"正常","o":"有大球"},{"c":"PMMA微球","s":"700um","f":"","m":"PMMA07000","k":"PA01U700NA","b":"20200925","q":"5","n":5,"t":"正常","o":""},{"c":"PET微球","s":"50nm","f":"","m":"PET01005","k":"PET01N050NA","b":"20251210","q":"4","n":4,"t":"低库存","o":""},{"c":"PET微球","s":"50nm-300nm","f":"","m":"PET01005","k":"PET01N050NA","b":"20250718","q":"4","n":4,"t":"低库存","o":""},{"c":"PET微球","s":"80nm","f":"","m":"PET01008","k":"PET01N080NA","b":"20250818","q":"1","n":1,"t":"低库存","o":""},{"c":"PET微球","s":"100nm","f":"","m":"PET01010","k":"PET01N100NA","b":"20251023","q":"8","n":8,"t":"正常","o":""},{"c":"PET微球","s":"150nm","f":"","m":"PET01015","k":"PET01N150NA","b":"","q":"","n":0,"t":"缺货","o":""},{"c":"PET微球","s":"200nm","f":"","m":"PET01020","k":"PET01N200NA","b":"","q":"","n":0,"t":"缺货","o":""},{"c":"PET微球","s":"500nm","f":"","m":"PET01050","k":"PET01N500NA","b":"","q":"","n":0,"t":"缺货","o":""},{"c":"PET微球","s":"1000nm/1um","f":"","m":"PET02010","k":"PET01U001NA","b":"","q":"","n":0,"t":"缺货","o":""},{"c":"PET微球","s":"5um","f":"","m":"PET02050","k":"PET01U005NA","b":"","q":"","n":0,"t":"缺货","o":""},{"c":"PET微球","s":"10um","f":"","m":"PET02100","k":"PET01U010NA","b":"","q":"","n":0,"t":"缺货","o":""},{"c":"功能化PS微球","s":"20nm","f":"羧基-COOH","m":"PS01002CM","k":"PS02N020NA","b":"","q":"","n":0,"t":"缺货","o":""},{"c":"功能化PS微球","s":"20nm","f":"氨基-NH2","m":"PS01002AM","k":"PS03N020NA","b":"","q":"","n":0,"t":"缺货","o":""},{"c":"功能化PS微球","s":"50nm","f":"羧基-COOH","m":"PS01005CM","k":"PS02N050NA","b":"20221119","q":"6","n":6,"t":"正常","o":""},{"c":"功能化PS微球","s":"50nm","f":"氨基-NH2","m":"PS01005AM","k":"PS03N050NA","b":"20221126","q":"8+9","n":17,"t":"正常","o":"待测"},{"c":"功能化PS微球","s":"50nm","f":"磺酸基-S","m":"PS01005S","k":"PS05N050NA","b":"20250426-3","q":"7","n":7,"t":"正常","o":"待测"},{"c":"功能化PS微球","s":"100nm","f":"羧基-COOH","m":"PS01010CM","k":"PS02N100NA","b":"20210807","q":"25","n":25,"t":"正常","o":""},{"c":"功能化PS微球","s":"100nm","f":"氨基-NH2","m":"PS01010AM","k":"PS03N100NA","b":"20230708","q":"4","n":4,"t":"正常","o":""},{"c":"功能化PS微球","s":"200nm","f":"羧基-COOH","m":"PS01020CM","k":"PS02N200NA","b":"20220409","q":"19","n":19,"t":"正常","o":""},{"c":"功能化PS微球","s":"200nm","f":"氨基-NH2","m":"PS01020AM","k":"PS03N200NA","b":"20250618","q":"7+6","n":13,"t":"正常","o":"待测"},{"c":"功能化PS微球","s":"300nm","f":"羧基-COOH","m":"PS01030CM","k":"PS02N300NA","b":"20220401","q":"5","n":5,"t":"低库存","o":""},{"c":"功能化PS微球","s":"300nm","f":"氨基-NH2","m":"PS01030AM","k":"PS03N300NA","b":"20231011","q":"5","n":5,"t":"低库存","o":"待测"},{"c":"功能化PS微球","s":"400nm","f":"羧基-COOH","m":"PS01040CM","k":"PS02N400NA","b":"","q":"","n":0,"t":"缺货","o":""},{"c":"功能化PS微球","s":"400nm","f":"氨基-NH2","m":"PS01040AM","k":"PS03N400NA","b":"","q":"","n":0,"t":"缺货","o":""},{"c":"功能化PS微球","s":"500nm","f":"羧基-COOH","m":"PS01050CM","k":"PS02N500NA","b":"20240829","q":"19","n":19,"t":"正常","o":""},{"c":"功能化PS微球","s":"500nm","f":"氨基-NH2","m":"PS01050AM","k":"PS03N500NA","b":"20240102","q":"7","n":7,"t":"正常","o":""},{"c":"功能化PS微球","s":"600nm","f":"羧基-COOH","m":"PS01060CM","k":"PS02N600NA","b":"","q":"","n":0,"t":"缺货","o":""},{"c":"功能化PS微球","s":"600nm","f":"氨基-NH2","m":"PS01060AM","k":"PS03N600NA","b":"","q":"","n":0,"t":"缺货","o":""},{"c":"功能化PS微球","s":"800nm","f":"羧基-COOH","m":"PS01080CM","k":"PS02N800NA","b":"","q":"","n":0,"t":"缺货","o":""},{"c":"功能化PS微球","s":"800nm","f":"氨基-NH2","m":"PS01080AM","k":"PS03N800NA","b":"","q":"","n":0,"t":"缺货","o":""},{"c":"功能化PS微球","s":"1000nm/1um","f":"羧基-COOH","m":"PS02010CM","k":"PS02U001NA","b":"20220411","q":"5","n":5,"t":"正常","o":"0407发霉要清洗"},{"c":"功能化PS微球","s":"1000nm/1um","f":"氨基-NH2","m":"PS02010AM","k":"PS03U001NA","b":"20231208","q":"9","n":9,"t":"正常","o":""},{"c":"功能化PS微球","s":"2um","f":"羧基-COOH","m":"PS02020CM","k":"PS02U002NA","b":"20230209","q":"3","n":3,"t":"低库存","o":""},{"c":"功能化PS微球","s":"2um","f":"氨基-NH2","m":"PS02020AM","k":"PS03U002NA","b":"待确认","q":"5","n":5,"t":"低库存","o":""},{"c":"功能化PS微球","s":"3um","f":"羧基-COOH","m":"PS02030CM","k":"PS02U003NA","b":"","q":"","n":0,"t":"缺货","o":""},{"c":"功能化PS微球","s":"3um","f":"氨基-NH2","m":"PS02030AM","k":"PS03U003NA","b":"","q":"","n":0,"t":"缺货","o":""},{"c":"功能化PS微球","s":"4um","f":"羧基-COOH","m":"PS02040CM","k":"PS02U004NA","b":"","q":"","n":0,"t":"缺货","o":""},{"c":"功能化PS微球","s":"4um","f":"氨基-NH2","m":"PS02040AM","k":"PS03U004NA","b":"","q":"","n":0,"t":"缺货","o":""},{"c":"功能化PS微球","s":"5um","f":"羧基-COOH","m":"PS02050CM","k":"PS02U005NA","b":"20260109","q":"18","n":18,"t":"低库存","o":""},{"c":"功能化PS微球","s":"5um","f":"氨基-NH2","m":"PS02050AM","k":"PS03U005NA","b":"20230713","q":"5","n":5,"t":"正常","o":""},{"c":"功能化PS微球","s":"5um","f":"羟基-OH","m":"PS02050OH","k":"PS04U005NA","b":"20240422","q":"30","n":30,"t":"正常","o":""},{"c":"功能化PS微球","s":"6um","f":"羧基-COOH","m":"PS02060CM","k":"PS02U006NA","b":"20240126","q":"8","n":8,"t":"正常","o":"粒径偏大"},{"c":"功能化PS微球","s":"6um","f":"氨基-NH2","m":"PS02060AM","k":"PS03U006NA","b":"","q":"","n":0,"t":"缺货","o":""},{"c":"功能化PS微球","s":"10um","f":"羧基-COOH","m":"PS02100CM","k":"PS02U010NA","b":"20230317","q":"8","n":8,"t":"正常","o":""},{"c":"功能化PS微球","s":"10um","f":"氨基-NH2","m":"PS02100AM","k":"PS03U010NA","b":"20201219","q":"1","n":1,"t":"低库存","o":"待测"},{"c":"功能化PS微球","s":"10um","f":"羟基-OH","m":"PS02100OH","k":"PS04U010NA","b":"20220331","q":"4","n":4,"t":"低库存","o":""},{"c":"功能化PS微球","s":"15um","f":"羧基-COOH","m":"PS02150CM","k":"PS02U015NA","b":"20250606","q":"20","n":20,"t":"正常","o":""},{"c":"功能化PS微球","s":"15um","f":"氨基-NH2","m":"PS02150AM","k":"PS03U015NA","b":"","q":"","n":0,"t":"缺货","o":""},{"c":"功能化PS微球","s":"15um","f":"羟基-OH","m":"PS02150OH","k":"PS04U015NA","b":"20231026","q":"15","n":15,"t":"正常","o":""},{"c":"功能化PS微球","s":"20um","f":"羧基-COOH","m":"PS02200CM","k":"PS02U020NA","b":"20220421","q":"14","n":14,"t":"正常","o":"待测"},{"c":"功能化PS微球","s":"20um","f":"氨基-NH2","m":"PS02200AM","k":"PS03U020NA","b":"","q":"","n":0,"t":"缺货","o":""},{"c":"功能化PS微球","s":"20um","f":"羟基-OH","m":"PS02200OH","k":"PS04U020NA","b":"20220312","q":"5","n":5,"t":"低库存","o":""},{"c":"功能化PS微球","s":"30um","f":"羧基-COOH","m":"PS02300CM","k":"PS02U030NA","b":"","q":"","n":0,"t":"缺货","o":""},{"c":"功能化PS微球","s":"30um","f":"氨基-NH2","m":"PS02300AM","k":"PS03U030NA","b":"20240804","q":"5","n":5,"t":"缺货","o":""},{"c":"功能化PS微球","s":"40um","f":"羧基-COOH","m":"PS02400CM","k":"PS02U040NA","b":"20211215","q":"15","n":15,"t":"正常","o":"发霉要处理"},{"c":"功能化PS微球","s":"40um","f":"氨基-NH2","m":"PS02400AM","k":"PS03U040NA","b":"","q":"","n":0,"t":"缺货","o":""},{"c":"功能化PS微球","s":"50um","f":"羧基-COOH","m":"PS02500CM","k":"PS02U050NA","b":"20220422","q":"9","n":9,"t":"正常","o":""},{"c":"功能化PS微球","s":"50um","f":"氨基-NH2","m":"PS02500AM","k":"PS03U050NA","b":"20191228","q":"0","n":0,"t":"缺货","o":""},{"c":"功能化PS微球","s":"50um","f":"磺酸基-S","m":"PS02500S","k":"PS05U050NA","b":"20241113","q":"5","n":5,"t":"低库存","o":""},{"c":"功能化PS微球","s":"100um","f":"羧基-COOH","m":"PS01000CM","k":"PS02U100NA","b":"","q":"","n":0,"t":"缺货","o":""},{"c":"功能化PS微球","s":"100um","f":"氨基-NH2","m":"PS01000AM","k":"PS03U100NA","b":"","q":"","n":0,"t":"缺货","o":""},{"c":"功能化PS微球","s":"200um","f":"羧基-COOH","m":"PS02000AM","k":"PS02U200NA","b":"","q":"","n":0,"t":"缺货","o":""},{"c":"功能化PS微球","s":"200um","f":"氨基-NH2","m":"PS02000CM","k":"PS03U200NA","b":"","q":"","n":0,"t":"缺货","o":""},{"c":"功能化PS微球","s":"5.6um","f":"羧基-COOH","m":"PS02056CM","k":"PS02U0056NA","b":"20230928","q":"6","n":6,"t":"低库存","o":""},{"c":"功能化PS微球","s":"8um","f":"季铵基-NH4+","m":"","k":"","b":"20211105","q":"15","n":15,"t":"正常","o":""},{"c":"功能化PS微球","s":"2um （PMMA）","f":"羧基-COOH","m":"","k":"","b":"20220315","q":"20","n":20,"t":"正常","o":""},{"c":"功能化PS微球","s":"1um PGMA","f":"环氧-EP","m":"","k":"","b":"20200907","q":"3","n":3,"t":"低库存","o":""},{"c":"功能化PS微球","s":"1.5um","f":"磺酸基-S","m":"","k":"","b":"20210721","q":"8","n":8,"t":"正常","o":""},{"c":"功能化PS微球","s":"9um","f":"季铵基-NH4+","m":"","k":"","b":"20191129","q":"5","n":5,"t":"正常","o":""},{"c":"功能化PS微球","s":"50nm(PMMA）","f":"羧基-COOH","m":"","k":"","b":"20220329","q":"5","n":5,"t":"正常","o":""},{"c":"功能化PS微球","s":"6um","f":"羧基-COOH","m":"","k":"","b":"20240126","q":"10","n":10,"t":"正常","o":""},{"c":"功能化PS微球","s":"20um","f":"磺酸基 -HSO3","m":"","k":"","b":"20240427","q":"6","n":6,"t":"正常","o":""},{"c":"功能化PS微球","s":"1um","f":"磺酸基 -HSO3","m":"","k":"","b":"20240428","q":"6","n":6,"t":"正常","o":""},{"c":"PS荧光微球(绿)","s":"50nm","f":"无","m":"UFPS0005G","k":"FS01N050G","b":"20240222","q":"16+8","n":24,"t":"正常","o":""},{"c":"PS荧光微球(绿)","s":"100nm","f":"无","m":"UFPS0101G","k":"FS01N100G","b":"20250724","q":"31+3+1","n":35,"t":"正常","o":""},{"c":"PS荧光微球(绿)","s":"150nm","f":"无","m":"UFPS0101G","k":"FS01N150G","b":"20240724","q":"4","n":4,"t":"正常","o":""},{"c":"PS荧光微球(绿)","s":"200nm","f":"无","m":"UFPS0102G","k":"FS01N200G","b":"20240222","q":"38","n":38,"t":"正常","o":"颜色淡，需加工"},{"c":"PS荧光微球(绿)","s":"500nm","f":"无","m":"UFPS0105G","k":"FS01N500G","b":"20250221","q":"42","n":42,"t":"正常","o":""},{"c":"PS荧光微球(绿)","s":"800nm","f":"无","m":"UFPS0108G","k":"FS01N800G","b":"20240529","q":"4","n":4,"t":"正常","o":"颜色略淡"},{"c":"PS荧光微球(绿)","s":"1000nm/1um","f":"无","m":"UFPS0201G","k":"FS01U001G","b":"20240731","q":"13","n":13,"t":"正常","o":""},{"c":"PS荧光微球(绿)","s":"2um","f":"无","m":"UFPS0202G","k":"FS01U002G","b":"20220502","q":"35","n":35,"t":"正常","o":""},{"c":"PS荧光微球(绿)","s":"3um","f":"无","m":"UFPS0203G","k":"FS01U003G","b":"20220429","q":"1+42","n":43,"t":"正常","o":""},{"c":"PS荧光微球(绿)","s":"4um","f":"无","m":"UFPS0204G","k":"FS01U004G","b":"20221208","q":"22","n":22,"t":"正常","o":""},{"c":"PS荧光微球(绿)","s":"5um","f":"无","m":"UFPS0205G","k":"FS01U005G","b":"20250624","q":"61+1","n":62,"t":"正常","o":""},{"c":"PS荧光微球(绿)","s":"6um","f":"无","m":"UFPS0206G","k":"FS01U006G","b":"20240618","q":"50","n":50,"t":"正常","o":""},{"c":"PS荧光微球(绿)","s":"10um","f":"无","m":"UFPS0210G","k":"FS01U010G","b":"20220817","q":"8","n":8,"t":"正常","o":""},{"c":"PS荧光微球(绿)","s":"15um","f":"无","m":"UFPS0215G","k":"FS01U015G","b":"20220317","q":"13","n":13,"t":"正常","o":"需加工，颜色有差异。"},{"c":"PS荧光微球(绿)","s":"20um","f":"无","m":"UFPS0220G","k":"FS01U020G","b":"20220721","q":"40","n":40,"t":"正常","o":""},{"c":"PS荧光微球(绿)","s":"30um","f":"无","m":"UFPS0230G","k":"FS01U030G","b":"20220721","q":"25","n":25,"t":"正常","o":"待检测"},{"c":"PS荧光微球(绿)","s":"40um","f":"无","m":"UFPS0240G","k":"FS01U040G","b":"20210526","q":"7","n":7,"t":"低库存","o":""},{"c":"PS荧光微球(绿)","s":"50um","f":"无","m":"UFPS0250G","k":"FS01U050G","b":"20240305","q":"15","n":15,"t":"正常","o":""},{"c":"PS荧光微球(绿)","s":"60um","f":"无","m":"UFPS0260G","k":"FS01U060G","b":"20221010","q":"15","n":15,"t":"正常","o":""},{"c":"PS荧光微球(绿)","s":"70um","f":"无","m":"UFPS0270G","k":"FS01U070G","b":"20251120","q":"9","n":9,"t":"低库存","o":""},{"c":"PS荧光微球(绿)","s":"100um","f":"无","m":"UFPS0100G","k":"FS01U100G","b":"20230605","q":"17","n":17,"t":"正常","o":""},{"c":"PS荧光微球(绿)","s":"130um","f":"无","m":"UFPS0130G","k":"FS01U130G","b":"20251125","q":"9","n":9,"t":"低库存","o":""},{"c":"PS荧光微球(绿)","s":"200um","f":"无","m":"UFPS0200G","k":"FS01U200G","b":"20240624","q":"1","n":1,"t":"低库存","o":""},{"c":"PS荧光微球(绿)","s":"7um","f":"无","m":"UFPS0207G","k":"FS01U007G","b":"20211229","q":"29","n":29,"t":"正常","o":"有客户反馈染色不均"},{"c":"PS荧光微球(绿)","s":"8um","f":"无","m":"UFPS0208G","k":"FS01U008G","b":"20220104","q":"24","n":24,"t":"正常","o":"颜色淡，需加工"},{"c":"PS荧光微球(绿)","s":"9um","f":"无","m":"UFPS0209G","k":"FS01U009G","b":"20220907","q":"20","n":20,"t":"正常","o":""},{"c":"PS荧光微球(绿)","s":"12um","f":"无","m":"UFPS0212G","k":"FS01U012G","b":"20210104","q":"44","n":44,"t":"正常","o":"颜色淡，需加工"},{"c":"PS荧光微球(绿)","s":"17um","f":"无","m":"UFPS0217G","k":"FS01U017G","b":"20210104","q":"60","n":60,"t":"正常","o":""},{"c":"PS荧光微球(绿)","s":"25um","f":"无","m":"UFPS0225G","k":"FS01U025G","b":"20210303","q":"34","n":34,"t":"正常","o":"颜色淡，需加工"},{"c":"PS荧光微球(绿)","s":"80um","f":"无","m":"UFPS0280G","k":"FS01U080G","b":"20221006","q":"25","n":25,"t":"正常","o":""},{"c":"PS荧光微球(绿)","s":"100nm","f":"羧基-COOH","m":"UFPS0101GCM","k":"FS02N100G","b":"20220530","q":"17","n":17,"t":"正常","o":""},{"c":"PS荧光微球(绿)","s":"100nm","f":"氨基-NH2","m":"UFPS0101GAM","k":"FS03N100G","b":"20220601","q":"14","n":14,"t":"正常","o":"颜色淡，需加工"},{"c":"PS荧光微球(绿)","s":"200nm","f":"羧基-COOH","m":"UFPS0102GCM","k":"FS02N200G","b":"20250827","q":"20","n":20,"t":"正常","o":""},{"c":"PS荧光微球(绿)","s":"200nm","f":"氨基-NH2","m":"UFPS0102GAM","k":"FS03N200G","b":"20220602","q":"0","n":0,"t":"缺货","o":"颜色淡，需加工"},{"c":"PS荧光微球(绿)","s":"500nm","f":"羧基-COOH","m":"UFPS0105GCM","k":"FS02N500G","b":"20220531","q":"15","n":15,"t":"正常","o":""},{"c":"PS荧光微球(绿)","s":"500nm","f":"氨基-NH2","m":"UFPS0105GAM","k":"FS03N500G","b":"20220601","q":"8","n":8,"t":"低库存","o":""},{"c":"PS荧光微球(绿)","s":"1um","f":"羧基-COOH","m":"UFPS0201GCM","k":"FS02U001G","b":"20231016","q":"14","n":14,"t":"正常","o":""},{"c":"PS荧光微球(绿)","s":"17um","f":"羧基-COOH","m":"UFPS0217GCM","k":"FS02U017G","b":"20220921","q":"25","n":25,"t":"正常","o":""},{"c":"PS荧光微球(绿)","s":"15um","f":"羧基-COOH","m":"UFPS0215GCM","k":"FS02U015G","b":"20250616-1","q":"4","n":4,"t":"正常","o":""},{"c":"PS荧光微球(橙红)","s":"50nm","f":"无","m":"UFPS0005O","k":"FS01N050O","b":"20240325","q":"41+5+11","n":57,"t":"正常","o":"有气味，需处理。"},{"c":"PS荧光微球(橙红)","s":"100nm","f":"无","m":"UFPS0101O","k":"FS01N100O","b":"20240123","q":"1+35+72","n":108,"t":"正常","o":"0807荧光弱，0825有客户反馈效果不行。"},{"c":"PS荧光微球(橙红)","s":"200nm","f":"无","m":"UFPS0102O","k":"FS01N200O","b":"20220223","q":"15","n":15,"t":"正常","o":""},{"c":"PS荧光微球(橙红)","s":"300nm","f":"无","m":"UFPS0103O","k":"FS01N300O","b":"20211204","q":"30","n":30,"t":"正常","o":"颜色略淡"},{"c":"PS荧光微球(橙红)","s":"500nm","f":"无","m":"UFPS0105O","k":"FS01N500O","b":"20240826","q":"49","n":49,"t":"正常","o":"有气味，需处理。"},{"c":"PS荧光微球(橙红)","s":"1000nm/1um","f":"无","m":"UFPS0201O","k":"FS01U001O","b":"20220721","q":"17","n":17,"t":"正常","o":"颜色略淡"},{"c":"PS荧光微球(橙红)","s":"2um","f":"无","m":"UFPS0202O","k":"FS01U002O","b":"20221009","q":"39","n":39,"t":"正常","o":""},{"c":"PS荧光微球(橙红)","s":"3um","f":"无","m":"UFPS0203O","k":"FS01U003O","b":"20210726","q":"7","n":7,"t":"低库存","o":"颜色略淡"},{"c":"PS荧光微球(橙红)","s":"4um","f":"无","m":"UFPS0204O","k":"FS01U004O","b":"20240913","q":"50","n":50,"t":"正常","o":""},{"c":"PS荧光微球(橙红)","s":"5um","f":"无","m":"UFPS0205O","k":"FS01U005O","b":"20211201","q":"16+8","n":24,"t":"正常","o":"颜色略淡"},{"c":"PS荧光微球(橙红)","s":"6um","f":"无","m":"UFPS0206O","k":"FS01U006O","b":"20210310","q":"10","n":10,"t":"待处理","o":""},{"c":"PS荧光微球(橙红)","s":"8um","f":"无","m":"UFPS0208O","k":"FS01U008O","b":"20240409","q":"29","n":29,"t":"正常","o":""},{"c":"PS荧光微球(橙红)","s":"10um","f":"无","m":"UFPS0210O","k":"FS01U010O","b":"20211123","q":"25","n":25,"t":"正常","o":""},{"c":"PS荧光微球(橙红)","s":"15um","f":"无","m":"UFPS0215O","k":"FS01U015O","b":"20220607","q":"24","n":24,"t":"正常","o":"颜色很淡"},{"c":"PS荧光微球(橙红)","s":"20um","f":"无","m":"UFPS0220O","k":"FS01U020O","b":"20220607","q":"15","n":15,"t":"正常","o":"颜色较淡"},{"c":"PS荧光微球(橙红)","s":"30um","f":"无","m":"UFPS0230O","k":"FS01U030O","b":"20210608","q":"8","n":8,"t":"正常","o":""},{"c":"PS荧光微球(橙红)","s":"40um","f":"无","m":"UFPS0240O","k":"FS01U040O","b":"","q":"","n":0,"t":"缺货","o":""},{"c":"PS荧光微球(橙红)","s":"50um","f":"无","m":"UFPS0250O","k":"FS01U050O","b":"20220530","q":"10","n":10,"t":"正常","o":"颜色略淡"},{"c":"PS荧光微球(橙红)","s":"60um","f":"无","m":"UFPS0260O","k":"FS01U060O","b":"20241111","q":"5","n":5,"t":"低库存","o":""},{"c":"PS荧光微球(橙红)","s":"100um","f":"","m":"UFPS0100O","k":"FS01U100O","b":"20211109","q":"57","n":57,"t":"正常","o":"颜色略淡"},{"c":"PS荧光微球(橙红)","s":"200um","f":"无","m":"UFPS0200O","k":"FS01U200O","b":"20250320","q":"3","n":3,"t":"低库存","o":""},{"c":"PS荧光微球(橙红)","s":"80nm","f":"无","m":"UFPS0207O","k":"FS01U007O","b":"20210712","q":"49","n":49,"t":"正常","o":"均一性一般"},{"c":"PS荧光微球(橙红)","s":"9um","f":"无","m":"UFPS0209O","k":"FS01U009O","b":"20220902","q":"60","n":60,"t":"正常","o":"颜色略淡"},{"c":"PS荧光微球(橙红)","s":"12um","f":"无","m":"UFPS0212O","k":"FS01U012O","b":"20210510","q":"32","n":32,"t":"正常","o":"颜色略淡"},{"c":"PS荧光微球(橙红)","s":"100nm","f":"氨基NH2","m":"UFPS0101OAM","k":"FS03N100O","b":"20240604","q":"5","n":5,"t":"正常","o":"颜色略淡"},{"c":"PS荧光微球(橙红)","s":"100nm","f":"羧基-COOH","m":"UFPS0101OCM","k":"FS02N100O","b":"20240603","q":"5","n":5,"t":"未知","o":""},{"c":"PS荧光微球(橙红)","s":"120nm","f":"定制款","m":"UFPS01012O","k":"FS01N120O","b":"20250826","q":"29","n":29,"t":"未知","o":""},{"c":"PS荧光微球(橙红)","s":"180nm","f":"无","m":"UFPS01018O","k":"FS01N180O","b":"20220209","q":"","n":0,"t":"未知","o":""},{"c":"PS荧光微球(橙红)","s":"8um","f":"无","m":"UFPS0208O2","k":"FS01U008O2","b":"20240409","q":"20","n":20,"t":"未知","o":"540激发"},{"c":"PS荧光微球(橙红)","s":"300nm","f":"羧基-COOH","m":"UFPS0103OCM","k":"FS02N300O","b":"20220611","q":"20","n":20,"t":"未知","o":""},{"c":"PS荧光微球(橙红)","s":"200nm","f":"羧基-COOH","m":"UFPS0102OCM","k":"FS02N200O","b":"20250611-2","q":"5","n":5,"t":"未知","o":""},{"c":"PS荧光微球(橙红)","s":"2um","f":"羧基-COOH","m":"UFPS0202OCM","k":"FS01U002O","b":"20250615-2","q":"4","n":4,"t":"正常","o":""},{"c":"PS荧光微球(蓝)","s":"50nm","f":"无","m":"UFPS0005B","k":"FS01N050B","b":"20251231","q":"25","n":25,"t":"正常","o":""},{"c":"PS荧光微球(蓝)","s":"100nm","f":"无","m":"UFPS0101B","k":"FS01N100B","b":"20241125","q":"5","n":5,"t":"低库存","o":""},{"c":"PS荧光微球(蓝)","s":"200nm","f":"无","m":"UFPS0102B","k":"FS01N200B","b":"20221213","q":"19","n":19,"t":"正常","o":""},{"c":"PS荧光微球(蓝)","s":"500nm","f":"无","m":"UFPS0105B","k":"FS01N500B","b":"20240920","q":"30","n":30,"t":"正常","o":""},{"c":"PS荧光微球(蓝)","s":"1000nm/1um","f":"无","m":"UFPS0201B","k":"FS01U001B","b":"20221209","q":"7","n":7,"t":"正常","o":""},{"c":"PS荧光微球(蓝)","s":"2um","f":"无","m":"UFPS0202B","k":"FS01U002B","b":"20240506","q":"20","n":20,"t":"正常","o":""},{"c":"PS荧光微球(蓝)","s":"3um","f":"无","m":"UFPS0203B","k":"FS01U003B","b":"20221206","q":"59","n":59,"t":"正常","o":""},{"c":"PS荧光微球(蓝)","s":"4um","f":"无","m":"UFPS0204B","k":"FS01U004B","b":"","q":"","n":0,"t":"缺货","o":""},{"c":"PS荧光微球(蓝)","s":"5um","f":"无","m":"UFPS0205B","k":"FS01U005B","b":"20230610","q":"22","n":22,"t":"正常","o":""},{"c":"PS荧光微球(蓝)","s":"6um","f":"无","m":"UFPS0206B","k":"FS01U006B","b":"","q":"","n":0,"t":"缺货","o":""},{"c":"PS荧光微球(蓝)","s":"10um","f":"无","m":"UFPS0210B","k":"FS01U010B","b":"20211024","q":"54","n":54,"t":"正常","o":""},{"c":"PS荧光微球(蓝)","s":"15um","f":"无","m":"UFPS0215B","k":"FS01U015B","b":"20220120","q":"49","n":49,"t":"正常","o":""},{"c":"PS荧光微球(蓝)","s":"20um","f":"无","m":"UFPS0220B","k":"FS01U020B","b":"20221128","q":"59","n":59,"t":"正常","o":""},{"c":"PS荧光微球(蓝)","s":"30um","f":"无","m":"UFPS0230B","k":"FS01U030B","b":"20211207","q":"29","n":29,"t":"正常","o":""},{"c":"PS荧光微球(蓝)","s":"40um","f":"无","m":"UFPS0240B","k":"FS01U040B","b":"","q":"","n":0,"t":"缺货","o":""},{"c":"PS荧光微球(蓝)","s":"50um","f":"无","m":"UFPS0250B","k":"FS01U050B","b":"20250422-1","q":"7","n":7,"t":"正常","o":""},{"c":"PS荧光微球(蓝)","s":"60um","f":"无","m":"UFPS0260B","k":"FS01U060B","b":"","q":"","n":0,"t":"缺货","o":""},{"c":"PS荧光微球(蓝)","s":"100um","f":"无","m":"UFPS0100B","k":"FS01U100B","b":"20211215","q":"35","n":35,"t":"正常","o":""},{"c":"PS荧光微球(蓝)","s":"200um","f":"","m":"PS02000","k":"PS01U200B","b":"","q":"","n":0,"t":"正常","o":"交联"},{"c":"PS荧光微球(蓝)","s":"10um","f":"羧基-COOH","m":"UFPS0210BCM","k":"FS02U010B","b":"20230731","q":"25","n":25,"t":"正常","o":""},{"c":"PS荧光微球(蓝)","s":"5um","f":"羧基-COOH","m":"UFPS0205BCM","k":"FS02U005B","b":"20221204","q":"49","n":49,"t":"正常","o":""},{"c":"PS荧光微球(蓝)","s":"200nm","f":"羧基-COOH","m":"UFPS0102BCM","k":"FS02N200B","b":"20250616-1","q":"6","n":6,"t":"正常","o":""},{"c":"PMMA荧光微球(绿)","s":"50nm","f":"无","m":"UFPA0005G","k":"FA01N050G","b":"20240708","q":"10","n":10,"t":"正常","o":""},{"c":"PMMA荧光微球(绿)","s":"100nm","f":"无","m":"UFPA0101G","k":"FA01N100G","b":"20230317","q":"100","n":100,"t":"正常","o":"颜色略淡"},{"c":"PMMA荧光微球(绿)","s":"200nm","f":"无","m":"UFPA0102G","k":"FA01N200G","b":"20211203","q":"50","n":50,"t":"正常","o":""},{"c":"PMMA荧光微球(绿)","s":"","f":"无","m":"UFPA0103G","k":"FA01N300G","b":"20211228","q":"39","n":39,"t":"正常","o":""},{"c":"PMMA荧光微球(绿)","s":"500nm","f":"无","m":"UFPA0105G","k":"FA01N500G","b":"20250611","q":"45","n":45,"t":"正常","o":""},{"c":"PMMA荧光微球(绿)","s":"1000nm/1um","f":"无","m":"UFPA0201G","k":"FA01U001G","b":"20220414","q":"1+30","n":31,"t":"正常","o":""},{"c":"PMMA荧光微球(绿)","s":"2um","f":"无","m":"UFPA0202G","k":"FA01U002G","b":"20200117","q":"43","n":43,"t":"正常","o":""},{"c":"PMMA荧光微球(绿)","s":"3um","f":"无","m":"UFPA0203G","k":"FA01U003G","b":"","q":"","n":0,"t":"缺货","o":""},{"c":"PMMA荧光微球(绿)","s":"4um","f":"无","m":"UFPA0204G","k":"FA01U004G","b":"","q":"","n":0,"t":"缺货","o":""},{"c":"PMMA荧光微球(绿)","s":"5um","f":"无","m":"UFPA0205G","k":"FA01U005G","b":"20240323","q":"79","n":79,"t":"正常","o":""},{"c":"PMMA荧光微球(绿)","s":"6um","f":"无","m":"UFPA0206G","k":"FA01U006G","b":"","q":"","n":0,"t":"缺货","o":""},{"c":"PMMA荧光微球(绿)","s":"10um","f":"无","m":"UFPA0210G","k":"FA01U010G","b":"20240311","q":"73","n":73,"t":"正常","o":"粉末"},{"c":"PMMA荧光微球(绿)","s":"15um","f":"无","m":"UFPA0215G","k":"FA01U015G","b":"20240311","q":"35","n":35,"t":"正常","o":"粉末"},{"c":"PMMA荧光微球(绿)","s":"20um","f":"无","m":"UFPA0220G","k":"FA01U020G","b":"20240311","q":"83","n":83,"t":"正常","o":"粉末"},{"c":"PMMA荧光微球(绿)","s":"30um","f":"无","m":"UFPA0230G","k":"FA01U030G","b":"","q":"","n":0,"t":"缺货","o":""},{"c":"PMMA荧光微球(绿)","s":"40um","f":"无","m":"UFPA0240G","k":"FA01U040G","b":"","q":"","n":0,"t":"缺货","o":""},{"c":"PMMA荧光微球(绿)","s":"50um","f":"无","m":"UFPA0250G","k":"FA01U050G","b":"","q":"","n":0,"t":"缺货","o":""},{"c":"PMMA荧光微球(绿)","s":"60um","f":"无","m":"UFPA0260G","k":"FA01U060G","b":"","q":"","n":0,"t":"缺货","o":""},{"c":"PMMA荧光微球(绿)","s":"100um","f":"无","m":"UFPA0100G","k":"FA01U100G","b":"","q":"","n":0,"t":"缺货","o":""},{"c":"PMMA荧光微球(绿)","s":"200um","f":"无","m":"UFPA0200G","k":"FA01U200G","b":"","q":"","n":0,"t":"缺货","o":""},{"c":"PMMA荧光微球(绿)","s":"200nm","f":"氨基NH2","m":"UFPA0102GAM","k":"FA03N200G","b":"20220523","q":"8","n":8,"t":"正常","o":"待测试"},{"c":"PMMA荧光微球(绿)","s":"1um","f":"羧基-COOH","m":"UFPA0201GCM","k":"FA02U001G","b":"20220329","q":"8","n":8,"t":"正常","o":"有聚集，需处理"},{"c":"PMMA荧光微球(绿)","s":"1um","f":"氨基NH2","m":"UFPA0201GAM","k":"FA03U001G","b":"20220328","q":"15","n":15,"t":"正常","o":"待测试"},{"c":"PMMA荧光微球(绿)","s":"50nm","f":"羧基-COOH","m":"UFPA01005GCM","k":"FA02N005G","b":"20230219","q":"","n":0,"t":"正常","o":""},{"c":"PMMA荧光微球(绿)","s":"400nm","f":"无","m":"UFPA0104G","k":"FA01N040G","b":"20211229","q":"60","n":60,"t":"正常","o":"颜色略淡"},{"c":"PMMA荧光微球(绿)","s":"200nm","f":"羧基-COOH","m":"UFPA0102GCM","k":"FA02N020G","b":"20220407","q":"","n":0,"t":"未知","o":"有聚集，需处理"},{"c":"PMMA荧光微球(绿)","s":"20um","f":"氨基NH2","m":"UFPA0220GAM","k":"FA03U020G","b":"20210518","q":"30","n":30,"t":"未知","o":"有聚集，需处理"},{"c":"PMMA荧光微球(橙红)","s":"50nm","f":"无","m":"UFPA0005O","k":"FA01N050O","b":"20241025","q":"10","n":10,"t":"正常","o":""},{"c":"PMMA荧光微球(橙红)","s":"100nm","f":"无","m":"UFPA0101O","k":"FA01N100O","b":"20251118","q":"39","n":39,"t":"正常","o":""},{"c":"PMMA荧光微球(橙红)","s":"200nm","f":"无","m":"UFPA0102O","k":"FA01N200O","b":"20220108","q":"50+40","n":90,"t":"正常","o":""},{"c":"PMMA荧光微球(橙红)","s":"300nm","f":"无","m":"UFPA0103O","k":"FA01N300O","b":"20220706","q":"3","n":3,"t":"正常","o":""},{"c":"PMMA荧光微球(橙红)","s":"500nm","f":"无","m":"UFPA0105O","k":"FA01N500O","b":"20211227","q":"49","n":49,"t":"正常","o":""},{"c":"PMMA荧光微球(橙红)","s":"1000nm/1um","f":"无","m":"UFPA0201O","k":"FA01U001O","b":"20231101","q":"16","n":16,"t":"正常","o":""},{"c":"PMMA荧光微球(橙红)","s":"2um","f":"无","m":"UFPA0202O","k":"FA01U002O","b":"20220509","q":"2","n":2,"t":"低库存","o":""},{"c":"PMMA荧光微球(橙红)","s":"3um","f":"无","m":"UFPA0203O","k":"FA01U003O","b":"20220510","q":"15","n":15,"t":"正常","o":""},{"c":"PMMA荧光微球(橙红)","s":"4um","f":"无","m":"UFPA0204O","k":"FA01U004O","b":"","q":"","n":0,"t":"缺货","o":""},{"c":"PMMA荧光微球(橙红)","s":"5um","f":"无","m":"UFPA0205O","k":"FA01U005O","b":"20250114","q":"12","n":12,"t":"正常","o":""},{"c":"PMMA荧光微球(橙红)","s":"6um","f":"无","m":"UFPA0206O","k":"FA01U006O","b":"","q":"","n":0,"t":"缺货","o":""},{"c":"PMMA荧光微球(橙红)","s":"10um","f":"无","m":"UFPA0210O","k":"FA01U010O","b":"20220119","q":"56","n":56,"t":"正常","o":""},{"c":"PMMA荧光微球(橙红)","s":"15um","f":"无","m":"UFPA0215O","k":"FA01U015O","b":"20210802","q":"10","n":10,"t":"正常","o":"0609颜色淡"},{"c":"PMMA荧光微球(橙红)","s":"20um","f":"无","m":"UFPA0220O","k":"FA01U020O","b":"20220228","q":"50","n":50,"t":"正常","o":""},{"c":"PMMA荧光微球(橙红)","s":"30um","f":"无","m":"UFPA0230O","k":"FA01U030O","b":"","q":"","n":0,"t":"缺货","o":""},{"c":"PMMA荧光微球(橙红)","s":"40um","f":"无","m":"UFPA0240O","k":"FA01U040O","b":"","q":"","n":0,"t":"缺货","o":""},{"c":"PMMA荧光微球(橙红)","s":"50um","f":"无","m":"UFPA0250O","k":"FA01U050O","b":"20220806","q":"29","n":29,"t":"正常","o":"颜色淡"},{"c":"PMMA荧光微球(橙红)","s":"60um","f":"无","m":"UFPA0260O","k":"FA01U060O","b":"","q":"","n":0,"t":"缺货","o":""},{"c":"PMMA荧光微球(橙红)","s":"100um","f":"无","m":"UFPA0100O","k":"FA01U100O","b":"20250424-1","q":"5","n":5,"t":"正常","o":""},{"c":"PMMA荧光微球(橙红)","s":"20um","f":"氨基-NH2","m":"UFPA0220OAM","k":"FA03N020O","b":"20210518","q":"30","n":30,"t":"正常","o":"长菌，需处理"},{"c":"PMMA荧光微球(橙红)","s":"150nm","f":"无","m":"UFPA01015O","k":"FA01N150O","b":"20220102","q":"60","n":60,"t":"未知","o":"颜色淡"},{"c":"PMMA荧光微球(橙红)","s":"300nm","f":"羧基-COOH","m":"UFPA0103OCM","k":"FA02N300O","b":"20250623","q":"5","n":5,"t":"未知","o":""},{"c":"PMMA荧光微球(蓝)","s":"50nm","f":"无","m":"UFPA0005B","k":"FA01N050B","b":"","q":"","n":0,"t":"缺货","o":""},{"c":"PMMA荧光微球(蓝)","s":"100nm","f":"无","m":"UFPA0101B","k":"FA01N100B","b":"","q":"","n":0,"t":"缺货","o":""},{"c":"PMMA荧光微球(蓝)","s":"200nm","f":"无","m":"UFPA0102B","k":"FA01N200B","b":"","q":"","n":0,"t":"缺货","o":""},{"c":"PMMA荧光微球(蓝)","s":"500nm","f":"无","m":"UFPA0105B","k":"FA01N500B","b":"","q":"","n":0,"t":"缺货","o":""},{"c":"PMMA荧光微球(蓝)","s":"1000nm/1um","f":"无","m":"UFPA0201B","k":"FA01U001B","b":"","q":"","n":0,"t":"缺货","o":""},{"c":"PMMA荧光微球(蓝)","s":"2um","f":"无","m":"UFPA0202B","k":"FA01U002B","b":"","q":"","n":0,"t":"缺货","o":""},{"c":"PMMA荧光微球(蓝)","s":"3um","f":"无","m":"UFPA0203B","k":"FA01U003B","b":"","q":"","n":0,"t":"缺货","o":""},{"c":"PMMA荧光微球(蓝)","s":"4um","f":"无","m":"UFPA0204B","k":"FA01U004B","b":"","q":"","n":0,"t":"缺货","o":""},{"c":"PMMA荧光微球(蓝)","s":"5um","f":"无","m":"UFPA0205B","k":"FA01U005B","b":"","q":"","n":0,"t":"缺货","o":""},{"c":"PMMA荧光微球(蓝)","s":"6um","f":"无","m":"UFPA0206B","k":"FA01U006B","b":"","q":"","n":0,"t":"缺货","o":""},{"c":"PMMA荧光微球(蓝)","s":"10um","f":"无","m":"UFPA0210B","k":"FA01U010B","b":"","q":"","n":0,"t":"缺货","o":""},{"c":"PMMA荧光微球(蓝)","s":"15um","f":"无","m":"UFPA0215B","k":"FA01U015B","b":"","q":"","n":0,"t":"缺货","o":""},{"c":"PMMA荧光微球(蓝)","s":"20um","f":"无","m":"UFPA0220B","k":"FA01U020B","b":"","q":"","n":0,"t":"缺货","o":""},{"c":"PMMA荧光微球(蓝)","s":"30um","f":"无","m":"UFPA0230B","k":"FA01U030B","b":"","q":"","n":0,"t":"缺货","o":""},{"c":"PMMA荧光微球(蓝)","s":"40um","f":"无","m":"UFPA0240B","k":"FA01U040B","b":"","q":"","n":0,"t":"缺货","o":""},{"c":"PMMA荧光微球(蓝)","s":"50um","f":"无","m":"UFPA0250B","k":"FA01U050B","b":"20250422-2","q":"8","n":8,"t":"正常","o":""},{"c":"PMMA荧光微球(蓝)","s":"60um","f":"无","m":"UFPA0260B","k":"FA01U060B","b":"","q":"","n":0,"t":"缺货","o":""},{"c":"PMMA荧光微球(蓝)","s":"100um","f":"无","m":"UFPA0100B","k":"FA01U100B","b":"","q":"","n":0,"t":"缺货","o":""},{"c":"PMMA荧光微球(蓝)","s":"200um","f":"","m":"PS02000","k":"PS01U200B","b":"","q":"","n":0,"t":"缺货","o":"交联"},{"c":"染色PS微球","s":"50nm","f":"无 蓝色","m":"UCPS0005B","k":"CS01N050B","b":"20231113-2","q":"3","n":3,"t":"低库存","o":""},{"c":"染色PS微球","s":"50nm","f":"无 红色","m":"UCPS0005R","k":"CS01N050R","b":"20231113-3","q":"8","n":8,"t":"低库存","o":""},{"c":"染色PS微球","s":"50nm","f":"无 黑色（偏紫）","m":"UCPS0005BL","k":"CS01N050BL","b":"20231113-4","q":"8","n":8,"t":"低库存","o":""},{"c":"染色PS微球","s":"100nm","f":"无 红色","m":"UCPS0101R","k":"CS01N100R","b":"20260115","q":"5","n":5,"t":"低库存","o":""},{"c":"染色PS微球","s":"200nm","f":"无 蓝色","m":"UCPS0102B","k":"CS01N200B","b":"20260112","q":"6","n":6,"t":"低库存","o":""},{"c":"染色PS微球","s":"500nm","f":"无","m":"UCPS0105G","k":"CS01N500G","b":"","q":"","n":0,"t":"缺货","o":""},{"c":"染色PS微球","s":"1000nm/1um","f":"无","m":"UCPS0201G","k":"CS01U001G","b":"","q":"","n":0,"t":"缺货","o":""},{"c":"染色PS微球","s":"2um","f":"无 红色","m":"UCPS0202R","k":"CS01U002R","b":"20250616","q":"3","n":3,"t":"低库存","o":""},{"c":"染色PS微球","s":"2um","f":"黑色","m":"UCPS0202BL","k":"CS01U002BL","b":"20260120","q":"7","n":7,"t":"未知","o":""},{"c":"染色PS微球","s":"5um","f":"无 蓝色","m":"UCPS0205B","k":"CS01U005B","b":"20231113-1","q":"8","n":8,"t":"低库存","o":""},{"c":"染色PS微球","s":"5um","f":"无 红色","m":"UCPS0205R","k":"CS01U005R","b":"20231113-2","q":"2","n":2,"t":"低库存","o":""},{"c":"染色PS微球","s":"5um","f":"无 黑色","m":"UCPS0205BL","k":"CS01U005BL","b":"20251101","q":"11","n":11,"t":"低库存","o":""},{"c":"染色PS微球","s":"10um","f":"无","m":"UCPS0210G","k":"CS01U010G","b":"","q":"","n":0,"t":"缺货","o":""},{"c":"染色PS微球","s":"10um","f":"氨基-NH2 蓝色","m":"UFPS0210BAM","k":"CS03U010B","b":"20250305","q":"3","n":3,"t":"低库存","o":""},{"c":"染色PS微球","s":"10um","f":"蓝色","m":"UFPS0210B","k":"CS01U010B","b":"20250521","q":"6","n":6,"t":"低库存","o":""},{"c":"染色PS微球","s":"10um","f":"黑色","m":"UFPS0210BL","k":"CS01U010BL","b":"20251109-1","q":"3+7","n":10,"t":"未知","o":""},{"c":"染色PS微球","s":"15um","f":"羧基-COOH 红色","m":"UCPS0215RCM","k":"CS02U015R","b":"20241114","q":"1+5","n":6,"t":"低库存","o":""},{"c":"染色PS微球","s":"20um","f":"无 蓝色","m":"UCPS0220B","k":"CS01U020B","b":"20230510","q":"6","n":6,"t":"低库存","o":""},{"c":"染色PS微球","s":"20um","f":"无 红色","m":"UCPS0220R","k":"CS01U020R","b":"20230506","q":"13","n":13,"t":"正常","o":""},{"c":"染色PS微球","s":"20um","f":"无 黑色","m":"UCPS0220BL","k":"CS01U020BL","b":"20250910","q":"9","n":9,"t":"正常","o":""},{"c":"染色PS微球","s":"30um","f":"无","m":"UCPS0230G","k":"CS01U030G","b":"","q":"","n":0,"t":"缺货","o":""},{"c":"染色PS微球","s":"40um","f":"无","m":"UCPS0240G","k":"CS01U040G","b":"","q":"","n":0,"t":"缺货","o":""},{"c":"染色PS微球","s":"50um","f":"无 黑色","m":"UCPS0250B","k":"CS01U050B","b":"20240723","q":"3","n":3,"t":"低库存","o":""},{"c":"染色PS微球","s":"100um","f":"无 黑色","m":"UCPS0100B","k":"CS01U100B","b":"20240724","q":"1","n":1,"t":"低库存","o":""},{"c":"染色PS微球","s":"500um","f":"无 黑色","m":"UCPS0500B","k":"CS01U500B","b":"20250407","q":"2","n":2,"t":"低库存","o":""},{"c":"染色PS微球","s":"600um","f":"无 红色","m":"UCPS0600R","k":"CS01U600R","b":"20240313","q":"3","n":3,"t":"低库存","o":""},{"c":"染色PS微球","s":"300nm","f":"羧基-COOH 红色","m":"UCPS0103RCM","k":"CS02U0103R","b":"20220419","q":"3","n":3,"t":"低库存","o":""},{"c":"染色PS微球","s":"2um","f":"羧基-COOH 红色","m":"UCPS0202RAM","k":"CS02U0202R","b":"20231222","q":"0.5","n":0,"t":"低库存","o":""},{"c":"染色PS微球","s":"7um","f":"无 红色","m":"UCPS0207R","k":"CS01U007R","b":"20240620","q":"4","n":4,"t":"低库存","o":""},{"c":"染色PS微球","s":"1000um","f":"无 蓝色","m":"UCPS1000B","k":"CS01U1K0B","b":"20230926","q":"2","n":2,"t":"低库存","o":""},{"c":"染色PS微球","s":"2um","f":"黑色","m":"UCPMMA0202BL","k":"CS01U002BL","b":"20250906","q":"0","n":0,"t":"缺货","o":""},{"c":"染色PS微球","s":"3um","f":"黑色","m":"UCPMMA0203BL","k":"CS01U003BL","b":"202510141","q":"3","n":3,"t":"低库存","o":""},{"c":"染色PS微球","s":"5um","f":"黑色","m":"UCPMMA0205BL","k":"CS01U005BL","b":"20251111","q":"2","n":2,"t":"低库存","o":""},{"c":"染色PS微球","s":"10um","f":"无 紫色","m":"UFPS0210P","k":"FS01U010P","b":"20251029-3","q":"2","n":2,"t":"低库存","o":""},{"c":"染色PS微球","s":"50um","f":"无 蓝色","m":"UCPS0250B","k":"CS01U050B","b":"20251029-1","q":"8","n":8,"t":"低库存","o":""},{"c":"染色PS微球","s":"100um","f":"无 红色","m":"UCPS0100R","k":"CS01U100R","b":"20251029-2","q":"8","n":8,"t":"低库存","o":""},{"c":"磁性微球","s":"20nm","f":"无 四氧化三铁","m":"NOI1002PL","k":"MF01N020NA","b":"","q":"","n":0,"t":"缺货","o":""},{"c":"磁性微球","s":"50nm","f":"无 四氧化三铁","m":"NOI1005PL","k":"MF01N050NA","b":"","q":"","n":0,"t":"缺货","o":""},{"c":"磁性微球","s":"100nm","f":"无 四氧化三铁","m":"NOI1010PL","k":"MF01N100NA","b":"20221116","q":"0","n":0,"t":"缺货","o":""},{"c":"磁性微球","s":"200nm","f":"无 四氧化三铁","m":"NOI1020PL","k":"MF01N200NA","b":"20250302","q":"9+6","n":15,"t":"低库存","o":""},{"c":"磁性微球","s":"300nm","f":"无 四氧化三铁","m":"NOI1020PL","k":"MF01N200NA","b":"20250403-2","q":"5+5","n":10,"t":"正常","o":""},{"c":"磁性微球","s":"400nm","f":"无 四氧化三铁","m":"NOI1040PL","k":"MF01N400NA","b":"20210103","q":"4","n":4,"t":"低库存","o":""},{"c":"磁性微球","s":"500nm","f":"无 四氧化三铁","m":"NOI1050PL","k":"MF01N500NA","b":"20250314","q":"3","n":3,"t":"正常","o":""},{"c":"磁性微球","s":"600nm","f":"无 四氧化三铁","m":"NOI1060PL","k":"MF01N600NA","b":"20221205","q":"7+20","n":27,"t":"低库存","o":""},{"c":"磁性微球","s":"800nm","f":"无 四氧化三铁","m":"NOI1080PL","k":"MF01N800NA","b":"20231102","q":"3+10","n":13,"t":"低库存","o":"待确认"},{"c":"磁性微球","s":"1000nm","f":"无 四氧化三铁","m":"NOI1100PL","k":"MF01N01KNA","b":"20250901","q":"6","n":6,"t":"低库存","o":""},{"c":"磁性微球","s":"1um","f":"无 聚苯乙烯磁性","m":"MPS0201PL","k":"MS01U001NA","b":"20221117","q":"40","n":40,"t":"正常","o":""},{"c":"磁性微球","s":"2um","f":"无 聚苯乙烯磁性","m":"MPS0202PL","k":"MS01U002NA","b":"20221116","q":"25","n":25,"t":"正常","o":""},{"c":"磁性微球","s":"3um","f":"无 聚苯乙烯磁性","m":"MPS0203PL","k":"MS01U003NA","b":"202510142","q":"7","n":7,"t":"缺货","o":""},{"c":"磁性微球","s":"4um","f":"无 聚苯乙烯磁性","m":"MPS0204PL","k":"MS01U004NA","b":"","q":"","n":0,"t":"缺货","o":""},{"c":"磁性微球","s":"5um","f":"无 聚苯乙烯磁性","m":"MPS0205PL","k":"MS01U005NA","b":"20210924","q":"20","n":20,"t":"正常","o":""},{"c":"磁性微球","s":"6um","f":"无 聚苯乙烯磁性","m":"MPS0206PL","k":"MS01U006NA","b":"","q":"","n":0,"t":"缺货","o":""},{"c":"磁性微球","s":"10um","f":"无 聚苯乙烯磁性","m":"MPS0210PL","k":"MS01U010NA","b":"20210311","q":"28","n":28,"t":"正常","o":""},{"c":"磁性微球","s":"10um","f":"羧基 聚苯乙烯磁性","m":"MPS0210CM","k":"MS02U010NA","b":"20231229","q":"29","n":29,"t":"正常","o":""},{"c":"磁性微球","s":"15um","f":"无 聚苯乙烯磁性","m":"MPS0215PL","k":"MS01U015NA","b":"20210820","q":"30","n":30,"t":"正常","o":""},{"c":"磁性微球","s":"20um","f":"无 聚苯乙烯磁性","m":"MPS0220PL","k":"MS01U020NA","b":"20210922","q":"45","n":45,"t":"正常","o":""},{"c":"磁性微球","s":"30um","f":"无 聚苯乙烯磁性","m":"MPS0230PL","k":"MS01U030NA","b":"20210923","q":"50","n":50,"t":"正常","o":""},{"c":"磁性微球","s":"40um","f":"无 聚苯乙烯磁性","m":"MPS0240PL","k":"MS01U040NA","b":"待确认","q":"50","n":50,"t":"正常","o":""},{"c":"磁性微球","s":"50um","f":"无 聚苯乙烯磁性","m":"MPS0250PL","k":"MS01U050NA","b":"20210918","q":"24","n":24,"t":"正常","o":""},{"c":"磁性微球","s":"60um","f":"无 聚苯乙烯磁性","m":"MPS0260PL","k":"MS01U060NA","b":"","q":"","n":0,"t":"缺货","o":""},{"c":"磁性微球","s":"100um","f":"无 聚苯乙烯磁性","m":"MPS0100PL","k":"MS01U100NA","b":"","q":"","n":0,"t":"缺货","o":""},{"c":"磁性微球","s":"200um","f":"无 聚苯乙烯磁性","m":"MPS0200PL","k":"MS01U200NA","b":"20230223","q":"10","n":10,"t":"正常","o":""},{"c":"磁性微球","s":"400um","f":"无 聚苯乙烯磁性","m":"MPS0400PL","k":"MS01U400NA","b":"20240515","q":"6","n":6,"t":"低库存","o":""},{"c":"磁性微球","s":"500um","f":"无 聚苯乙烯磁性","m":"MPS0500PL","k":"MS01U500NA","b":"20230712","q":"2","n":2,"t":"低库存","o":""},{"c":"磁性微球","s":"1000um","f":"无 聚苯乙烯磁性","m":"MPS1000PL","k":"MS01U01KNA","b":"","q":"","n":0,"t":"缺货","o":""},{"c":"磁性微球","s":"30um","f":"无 聚苯乙烯磁性","m":"MPS0235PL","k":"MS01U035NA","b":"20210821","q":"12","n":12,"t":"正常","o":""},{"c":"磁性微球","s":"850um","f":"无 聚苯乙烯磁性","m":"MPS0850PL","k":"MS01U850NA","b":"20250521","q":"5","n":5,"t":"正常","o":""},{"c":"磁性微球","s":"400um","f":"羧基 聚苯乙烯磁性","m":"MPS0400CM","k":"MS01U400NA","b":"20240627","q":"3","n":3,"t":"低库存","o":""},{"c":"磁性微球","s":"800nm","f":"羧基 四氧化三铁","m":"NOI1080CM","k":"MF01N800NA","b":"20251103","q":"1","n":1,"t":"低库存","o":"待确认"},{"c":"PE微球","s":"待定","f":"","m":"PE01","k":"PE01NA","b":"","q":"","n":0,"t":"研发中","o":"P0:优化分级CV<30%"},{"c":"PP微球","s":"待定","f":"","m":"PP01","k":"PP01NA","b":"","q":"","n":0,"t":"研发中","o":"P0:类似PE路线,试2-3次"},{"c":"PVC微球","s":"多规格","f":"","m":"PVC01","k":"PVC01NA","b":"20260201","q":"10","n":10,"t":"待包装","o":"已开发完成,需跑COA上架"},{"c":"离心柱","s":"2mL","f":"蛋白G","m":"RP-PG-2","k":"RP01-PG-2ML","b":"","q":"","n":0,"t":"研发中","o":"Week2照搬ProteinA换配基"},{"c":"离心柱","s":"2mL","f":"Ni-IDA镍亲合","m":"RP-NI-2","k":"RP01-NI-2ML","b":"","q":"","n":0,"t":"研发中","o":"P1:乙二胺两步法攻关"},{"c":"离心柱","s":"2mL","f":"脱盐Desalting","m":"RP-DS-2","k":"RP01-DS-2ML","b":"","q":"","n":0,"t":"研发中","o":"P1:Varady涂层验证"},{"c":"色谱柱","s":"4.6×50mm","f":"Protein A分析","m":"RM-PA","k":"RM01-PA","b":"","q":"","n":0,"t":"研发中","o":"P1:偶联+寿命测试"},{"c":"色谱柱","s":"4.6×50mm","f":"Bio-WCX","m":"RM-WCX","k":"RM01-WCX","b":"","q":"","n":0,"t":"待启动","o":"P1:Week7,伯仪感兴趣"},{"c":"生物磁珠","s":"1um","f":"链霉亲和素","m":"","k":"","b":"","q":"","n":0,"t":"待开发","o":""},{"c":"生物磁珠","s":"1um","f":"蛋白A/G","m":"","k":"","b":"","q":"","n":0,"t":"待开发","o":""}];
+const PATHS=["PolyRef/PS/PS01N020NA_20250706", "PolyRef/PS/PS01N030NA_20250705", "PolyRef/PS/PS01N050NA_20250219", "PolyRef/PS/PS01N080NA_20250707", "PolyRef/PS/PS01N100NA_20250716", "PolyRef/PS/PS01N150NA_20200512", "PolyRef/PS/PS01N200NA_20250312", "PolyRef/PS/PS01N300NA_20250820", "PolyRef/PS/PS01N400NA_20220725", "PolyRef/PS/PS01N500NA_20250825", "PolyRef/PS/PS01N600NA_20210617", "PolyRef/PS/PS01N700NA_20210822", "PolyRef/PS/PS01N800NA_20210819", "PolyRef/PS/PS01N900NA_20220917", "PolyRef/PS/PS01U001NA_20250402", "PolyRef/PS/PS01U002NA_20230530", "PolyRef/PS/PS01U003NA_20250218", "PolyRef/PS/PS01U004NA_20230223", "PolyRef/PS/PS01U005NA_20250307", "PolyRef/PS/PS01U006NA_20210805", "PolyRef/PS/PS01U007NA_20200513", "PolyRef/PS/PS01U008NA_20210510", "PolyRef/PS/PS01U009NA_20220905", "PolyRef/PS/PS01U010NA_20240314", "PolyRef/PS/PS01U012NA_20240306", "PolyRef/PS/PS01U015NA_20250326", "PolyRef/PS/PS01U020NA_20210921", "PolyRef/PS/PS01U025NA_20190904", "PolyRef/PS/PS01U030NA_20220629", "PolyRef/PS/PS01U035NA_20240815", "PolyRef/PS/PS01U040NA_20220817", "PolyRef/PS/PS01U045NA_20240822", "PolyRef/PS/PS01U050NA_20210927", "PolyRef/PS/PS01U060NA_20210405", "PolyRef/PS/PS01U070NA_20240124", "PolyRef/PS/PS01U080NA_no_batch", "PolyRef/PS/PS01U090NA_no_batch", "PolyRef/PS/PS01U100NA_20211130", "PolyRef/PS/PS01U150NA_20251020", "PolyRef/PS/PS01U200NA_no_batch", "PolyRef/PS/PS01U300NA_20240326", "PolyRef/PS/PS01U400NA_20230728", "PolyRef/PS/PS01U500NA_20240302", "PolyRef/PS/PS01U600NA_20221127", "PolyRef/PS/PS01U700NA_20250314", "PolyRef/PS/PS01U800NA_20250315", "PolyRef/PS/PS01U900NA_no_batch", "PolyRef/PS/PS01U01KNA_20231213", "PolyRef/PS/PS01U0015NA_20230508", "PolyRef/PS/PS01N120NA_20250311", "PolyRef/PS/PS01N180NA_20220111", "PolyRef/PS/PS01N250NA_20200805", "PolyRef/PS/PS01N350NA_20200718", "PolyRef/PS/PS01N280NA_20221216", "PolyRef/PS/PS01N750NA_20230427", "PolyRef/PS/PS01U0028NA_20200919", "PolyRef/PS/PS01U0065NA_20230814", "PolyRef/PS/PS01U02KNA_20240826", "PolyRef/PMMA/PA01N020NA_no_batch", "PolyRef/PMMA/PA01N030NA_no_batch", "PolyRef/PMMA/PA01N050NA_20221008", "PolyRef/PMMA/PA01N080NA_no_batch", "PolyRef/PMMA/PA01N100NA_20211216", "PolyRef/PMMA/PA01N200NA_20220723", "PolyRef/PMMA/PA01N300NA_20220725", "PolyRef/PMMA/PA01N400NA_20220426", "PolyRef/PMMA/PA01N500NA_20220421", "PolyRef/PMMA/PA01N600NA_20220418", "PolyRef/PMMA/PA01N700NA_20220429", "PolyRef/PMMA/PA01N800NA_20220511", "PolyRef/PMMA/PA01U001NA_20220730", "PolyRef/PMMA/PA01U002NA_20240327", "PolyRef/PMMA/PA01U003NA_20231204", "PolyRef/PMMA/PA01U004NA_20250507", "PolyRef/PMMA/PA01U005NA_20240401", "PolyRef/PMMA/PA01U008NA_20250627", "PolyRef/PMMA/PA01U010NA_20221206", "PolyRef/PMMA/PA01U015NA_20250703", "PolyRef/PMMA/PA01U020NA_20240307", "PolyRef/PMMA/PA01U025NA_no_batch", "PolyRef/PMMA/PA01U030NA_20240412", "PolyRef/PMMA/PA01U040NA_20240326", "PolyRef/PMMA/PA01U050NA_20190925", "PolyRef/PMMA/PA01U060NA_no_batch", "PolyRef/PMMA/PA01U080NA_no_batch", "PolyRef/PMMA/PA01U100NA_20240506", "PolyRef/PMMA/PA01U200NA_no_batch", "PolyRef/PMMA/PA01U300NA_20250312", "PolyRef/PMMA/PA01U400NA_20250313", "PolyRef/PMMA/PA01U500NA_no_batch", "PolyRef/PMMA/PA01U800NA_20240703", "PolyRef/PMMA/PA01U01KNA_no_batch", "PolyRef/PMMA/PA01N150NA_20201029", "PolyRef/PMMA/PA01N180NA_20201015", "PolyRef/PMMA/PA01N220NA_20220422", "PolyRef/PMMA/PA01N280NA_20220722", "PolyRef/PMMA/PA01U007NA_20220923", "PolyRef/PMMA/PA01U700NA_20200925", "PolyRef/PET/PET01N050NA_20251210", "PolyRef/PET/PET01N050NA_20250718", "PolyRef/PET/PET01N080NA_20250818", "PolyRef/PET/PET01N100NA_20251023", "PolyRef/PET/PET01N150NA_no_batch", "PolyRef/PET/PET01N200NA_no_batch", "PolyRef/PET/PET01N500NA_no_batch", "PolyRef/PET/PET01U001NA_no_batch", "PolyRef/PET/PET01U005NA_no_batch", "PolyRef/PET/PET01U010NA_no_batch", "PolyRef/PS-Func/PS02N020NA_no_batch", "PolyRef/PS-Func/PS03N020NA_no_batch", "PolyRef/PS-Func/PS02N050NA_20221119", "PolyRef/PS-Func/PS03N050NA_20221126", "PolyRef/PS-Func/PS05N050NA_20250426-3", "PolyRef/PS-Func/PS02N100NA_20210807", "PolyRef/PS-Func/PS03N100NA_20230708", "PolyRef/PS-Func/PS02N200NA_20220409", "PolyRef/PS-Func/PS03N200NA_20250618", "PolyRef/PS-Func/PS02N300NA_20220401", "PolyRef/PS-Func/PS03N300NA_20231011", "PolyRef/PS-Func/PS02N400NA_no_batch", "PolyRef/PS-Func/PS03N400NA_no_batch", "PolyRef/PS-Func/PS02N500NA_20240829", "PolyRef/PS-Func/PS03N500NA_20240102", "PolyRef/PS-Func/PS02N600NA_no_batch", "PolyRef/PS-Func/PS03N600NA_no_batch", "PolyRef/PS-Func/PS02N800NA_no_batch", "PolyRef/PS-Func/PS03N800NA_no_batch", "PolyRef/PS-Func/PS02U001NA_20220411", "PolyRef/PS-Func/PS03U001NA_20231208", "PolyRef/PS-Func/PS02U002NA_20230209", "PolyRef/PS-Func/PS03U002NA_待确认", "PolyRef/PS-Func/PS02U003NA_no_batch", "PolyRef/PS-Func/PS03U003NA_no_batch", "PolyRef/PS-Func/PS02U004NA_no_batch", "PolyRef/PS-Func/PS03U004NA_no_batch", "PolyRef/PS-Func/PS02U005NA_20260109", "PolyRef/PS-Func/PS03U005NA_20230713", "PolyRef/PS-Func/PS04U005NA_20240422", "PolyRef/PS-Func/PS02U006NA_20240126", "PolyRef/PS-Func/PS03U006NA_no_batch", "PolyRef/PS-Func/PS02U010NA_20230317", "PolyRef/PS-Func/PS03U010NA_20201219", "PolyRef/PS-Func/PS04U010NA_20220331", "PolyRef/PS-Func/PS02U015NA_20250606", "PolyRef/PS-Func/PS03U015NA_no_batch", "PolyRef/PS-Func/PS04U015NA_20231026", "PolyRef/PS-Func/PS02U020NA_20220421", "PolyRef/PS-Func/PS03U020NA_no_batch", "PolyRef/PS-Func/PS04U020NA_20220312", "PolyRef/PS-Func/PS02U030NA_no_batch", "PolyRef/PS-Func/PS03U030NA_20240804", "PolyRef/PS-Func/PS02U040NA_20211215", "PolyRef/PS-Func/PS03U040NA_no_batch", "PolyRef/PS-Func/PS02U050NA_20220422", "PolyRef/PS-Func/PS03U050NA_20191228", "PolyRef/PS-Func/PS05U050NA_20241113", "PolyRef/PS-Func/PS02U100NA_no_batch", "PolyRef/PS-Func/PS03U100NA_no_batch", "PolyRef/PS-Func/PS02U200NA_no_batch", "PolyRef/PS-Func/PS03U200NA_no_batch", "PolyRef/PS-Func/PS02U0056NA_20230928", "PolyRef/PS-Func/no_sku_20211105", "PolyRef/PS-Func/no_sku_20220315", "PolyRef/PS-Func/no_sku_20200907", "PolyRef/PS-Func/no_sku_20210721", "PolyRef/PS-Func/no_sku_20191129", "PolyRef/PS-Func/no_sku_20220329", "PolyRef/PS-Func/no_sku_20240126", "PolyRef/PS-Func/no_sku_20240427", "PolyRef/PS-Func/no_sku_20240428", "PolyRef/PS-FL-Green/FS01N050G_20240222", "PolyRef/PS-FL-Green/FS01N100G_20250724", "PolyRef/PS-FL-Green/FS01N150G_20240724", "PolyRef/PS-FL-Green/FS01N200G_20240222", "PolyRef/PS-FL-Green/FS01N500G_20250221", "PolyRef/PS-FL-Green/FS01N800G_20240529", "PolyRef/PS-FL-Green/FS01U001G_20240731", "PolyRef/PS-FL-Green/FS01U002G_20220502", "PolyRef/PS-FL-Green/FS01U003G_20220429", "PolyRef/PS-FL-Green/FS01U004G_20221208", "PolyRef/PS-FL-Green/FS01U005G_20250624", "PolyRef/PS-FL-Green/FS01U006G_20240618", "PolyRef/PS-FL-Green/FS01U010G_20220817", "PolyRef/PS-FL-Green/FS01U015G_20220317", "PolyRef/PS-FL-Green/FS01U020G_20220721", "PolyRef/PS-FL-Green/FS01U030G_20220721", "PolyRef/PS-FL-Green/FS01U040G_20210526", "PolyRef/PS-FL-Green/FS01U050G_20240305", "PolyRef/PS-FL-Green/FS01U060G_20221010", "PolyRef/PS-FL-Green/FS01U070G_20251120", "PolyRef/PS-FL-Green/FS01U100G_20230605", "PolyRef/PS-FL-Green/FS01U130G_20251125", "PolyRef/PS-FL-Green/FS01U200G_20240624", "PolyRef/PS-FL-Green/FS01U007G_20211229", "PolyRef/PS-FL-Green/FS01U008G_20220104", "PolyRef/PS-FL-Green/FS01U009G_20220907", "PolyRef/PS-FL-Green/FS01U012G_20210104", "PolyRef/PS-FL-Green/FS01U017G_20210104", "PolyRef/PS-FL-Green/FS01U025G_20210303", "PolyRef/PS-FL-Green/FS01U080G_20221006", "PolyRef/PS-FL-Green/FS02N100G_20220530", "PolyRef/PS-FL-Green/FS03N100G_20220601", "PolyRef/PS-FL-Green/FS02N200G_20250827", "PolyRef/PS-FL-Green/FS03N200G_20220602", "PolyRef/PS-FL-Green/FS02N500G_20220531", "PolyRef/PS-FL-Green/FS03N500G_20220601", "PolyRef/PS-FL-Green/FS02U001G_20231016", "PolyRef/PS-FL-Green/FS02U017G_20220921", "PolyRef/PS-FL-Green/FS02U015G_20250616-1", "PolyRef/PS-FL-Orange/FS01N050O_20240325", "PolyRef/PS-FL-Orange/FS01N100O_20240123", "PolyRef/PS-FL-Orange/FS01N200O_20220223", "PolyRef/PS-FL-Orange/FS01N300O_20211204", "PolyRef/PS-FL-Orange/FS01N500O_20240826", "PolyRef/PS-FL-Orange/FS01U001O_20220721", "PolyRef/PS-FL-Orange/FS01U002O_20221009", "PolyRef/PS-FL-Orange/FS01U003O_20210726", "PolyRef/PS-FL-Orange/FS01U004O_20240913", "PolyRef/PS-FL-Orange/FS01U005O_20211201", "PolyRef/PS-FL-Orange/FS01U006O_20210310", "PolyRef/PS-FL-Orange/FS01U008O_20240409", "PolyRef/PS-FL-Orange/FS01U010O_20211123", "PolyRef/PS-FL-Orange/FS01U015O_20220607", "PolyRef/PS-FL-Orange/FS01U020O_20220607", "PolyRef/PS-FL-Orange/FS01U030O_20210608", "PolyRef/PS-FL-Orange/FS01U040O_no_batch", "PolyRef/PS-FL-Orange/FS01U050O_20220530", "PolyRef/PS-FL-Orange/FS01U060O_20241111", "PolyRef/PS-FL-Orange/FS01U100O_20211109", "PolyRef/PS-FL-Orange/FS01U200O_20250320", "PolyRef/PS-FL-Orange/FS01U007O_20210712", "PolyRef/PS-FL-Orange/FS01U009O_20220902", "PolyRef/PS-FL-Orange/FS01U012O_20210510", "PolyRef/PS-FL-Orange/FS03N100O_20240604", "PolyRef/PS-FL-Orange/FS02N100O_20240603", "PolyRef/PS-FL-Orange/FS01N120O_20250826", "PolyRef/PS-FL-Orange/FS01N180O_20220209", "PolyRef/PS-FL-Orange/FS01U008O2_20240409", "PolyRef/PS-FL-Orange/FS02N300O_20220611", "PolyRef/PS-FL-Orange/FS02N200O_20250611-2", "PolyRef/PS-FL-Orange/FS01U002O_20250615-2", "PolyRef/PS-FL-Blue/FS01N050B_20251231", "PolyRef/PS-FL-Blue/FS01N100B_20241125", "PolyRef/PS-FL-Blue/FS01N200B_20221213", "PolyRef/PS-FL-Blue/FS01N500B_20240920", "PolyRef/PS-FL-Blue/FS01U001B_20221209", "PolyRef/PS-FL-Blue/FS01U002B_20240506", "PolyRef/PS-FL-Blue/FS01U003B_20221206", "PolyRef/PS-FL-Blue/FS01U004B_no_batch", "PolyRef/PS-FL-Blue/FS01U005B_20230610", "PolyRef/PS-FL-Blue/FS01U006B_no_batch", "PolyRef/PS-FL-Blue/FS01U010B_20211024", "PolyRef/PS-FL-Blue/FS01U015B_20220120", "PolyRef/PS-FL-Blue/FS01U020B_20221128", "PolyRef/PS-FL-Blue/FS01U030B_20211207", "PolyRef/PS-FL-Blue/FS01U040B_no_batch", "PolyRef/PS-FL-Blue/FS01U050B_20250422-1", "PolyRef/PS-FL-Blue/FS01U060B_no_batch", "PolyRef/PS-FL-Blue/FS01U100B_20211215", "PolyRef/PS-FL-Blue/PS01U200B_no_batch", "PolyRef/PS-FL-Blue/FS02U010B_20230731", "PolyRef/PS-FL-Blue/FS02U005B_20221204", "PolyRef/PS-FL-Blue/FS02N200B_20250616-1", "PolyRef/PMMA-FL-Green/FA01N050G_20240708", "PolyRef/PMMA-FL-Green/FA01N100G_20230317", "PolyRef/PMMA-FL-Green/FA01N200G_20211203", "PolyRef/PMMA-FL-Green/FA01N300G_20211228", "PolyRef/PMMA-FL-Green/FA01N500G_20250611", "PolyRef/PMMA-FL-Green/FA01U001G_20220414", "PolyRef/PMMA-FL-Green/FA01U002G_20200117", "PolyRef/PMMA-FL-Green/FA01U003G_no_batch", "PolyRef/PMMA-FL-Green/FA01U004G_no_batch", "PolyRef/PMMA-FL-Green/FA01U005G_20240323", "PolyRef/PMMA-FL-Green/FA01U006G_no_batch", "PolyRef/PMMA-FL-Green/FA01U010G_20240311", "PolyRef/PMMA-FL-Green/FA01U015G_20240311", "PolyRef/PMMA-FL-Green/FA01U020G_20240311", "PolyRef/PMMA-FL-Green/FA01U030G_no_batch", "PolyRef/PMMA-FL-Green/FA01U040G_no_batch", "PolyRef/PMMA-FL-Green/FA01U050G_no_batch", "PolyRef/PMMA-FL-Green/FA01U060G_no_batch", "PolyRef/PMMA-FL-Green/FA01U100G_no_batch", "PolyRef/PMMA-FL-Green/FA01U200G_no_batch", "PolyRef/PMMA-FL-Green/FA03N200G_20220523", "PolyRef/PMMA-FL-Green/FA02U001G_20220329", "PolyRef/PMMA-FL-Green/FA03U001G_20220328", "PolyRef/PMMA-FL-Green/FA02N005G_20230219", "PolyRef/PMMA-FL-Green/FA01N040G_20211229", "PolyRef/PMMA-FL-Green/FA02N020G_20220407", "PolyRef/PMMA-FL-Green/FA03U020G_20210518", "PolyRef/PMMA-FL-Orange/FA01N050O_20241025", "PolyRef/PMMA-FL-Orange/FA01N100O_20251118", "PolyRef/PMMA-FL-Orange/FA01N200O_20220108", "PolyRef/PMMA-FL-Orange/FA01N300O_20220706", "PolyRef/PMMA-FL-Orange/FA01N500O_20211227", "PolyRef/PMMA-FL-Orange/FA01U001O_20231101", "PolyRef/PMMA-FL-Orange/FA01U002O_20220509", "PolyRef/PMMA-FL-Orange/FA01U003O_20220510", "PolyRef/PMMA-FL-Orange/FA01U004O_no_batch", "PolyRef/PMMA-FL-Orange/FA01U005O_20250114", "PolyRef/PMMA-FL-Orange/FA01U006O_no_batch", "PolyRef/PMMA-FL-Orange/FA01U010O_20220119", "PolyRef/PMMA-FL-Orange/FA01U015O_20210802", "PolyRef/PMMA-FL-Orange/FA01U020O_20220228", "PolyRef/PMMA-FL-Orange/FA01U030O_no_batch", "PolyRef/PMMA-FL-Orange/FA01U040O_no_batch", "PolyRef/PMMA-FL-Orange/FA01U050O_20220806", "PolyRef/PMMA-FL-Orange/FA01U060O_no_batch", "PolyRef/PMMA-FL-Orange/FA01U100O_20250424-1", "PolyRef/PMMA-FL-Orange/FA03N020O_20210518", "PolyRef/PMMA-FL-Orange/FA01N150O_20220102", "PolyRef/PMMA-FL-Orange/FA02N300O_20250623", "PolyRef/PMMA-FL-Blue/FA01N050B_no_batch", "PolyRef/PMMA-FL-Blue/FA01N100B_no_batch", "PolyRef/PMMA-FL-Blue/FA01N200B_no_batch", "PolyRef/PMMA-FL-Blue/FA01N500B_no_batch", "PolyRef/PMMA-FL-Blue/FA01U001B_no_batch", "PolyRef/PMMA-FL-Blue/FA01U002B_no_batch", "PolyRef/PMMA-FL-Blue/FA01U003B_no_batch", "PolyRef/PMMA-FL-Blue/FA01U004B_no_batch", "PolyRef/PMMA-FL-Blue/FA01U005B_no_batch", "PolyRef/PMMA-FL-Blue/FA01U006B_no_batch", "PolyRef/PMMA-FL-Blue/FA01U010B_no_batch", "PolyRef/PMMA-FL-Blue/FA01U015B_no_batch", "PolyRef/PMMA-FL-Blue/FA01U020B_no_batch", "PolyRef/PMMA-FL-Blue/FA01U030B_no_batch", "PolyRef/PMMA-FL-Blue/FA01U040B_no_batch", "PolyRef/PMMA-FL-Blue/FA01U050B_20250422-2", "PolyRef/PMMA-FL-Blue/FA01U060B_no_batch", "PolyRef/PMMA-FL-Blue/FA01U100B_no_batch", "PolyRef/PMMA-FL-Blue/PS01U200B_no_batch", "PolyRef/PS-Dyed/CS01N050B_20231113-2", "PolyRef/PS-Dyed/CS01N050R_20231113-3", "PolyRef/PS-Dyed/CS01N050BL_20231113-4", "PolyRef/PS-Dyed/CS01N100R_20260115", "PolyRef/PS-Dyed/CS01N200B_20260112", "PolyRef/PS-Dyed/CS01N500G_no_batch", "PolyRef/PS-Dyed/CS01U001G_no_batch", "PolyRef/PS-Dyed/CS01U002R_20250616", "PolyRef/PS-Dyed/CS01U002BL_20260120", "PolyRef/PS-Dyed/CS01U005B_20231113-1", "PolyRef/PS-Dyed/CS01U005R_20231113-2", "PolyRef/PS-Dyed/CS01U005BL_20251101", "PolyRef/PS-Dyed/CS01U010G_no_batch", "PolyRef/PS-Dyed/CS03U010B_20250305", "PolyRef/PS-Dyed/CS01U010B_20250521", "PolyRef/PS-Dyed/CS01U010BL_20251109-1", "PolyRef/PS-Dyed/CS02U015R_20241114", "PolyRef/PS-Dyed/CS01U020B_20230510", "PolyRef/PS-Dyed/CS01U020R_20230506", "PolyRef/PS-Dyed/CS01U020BL_20250910", "PolyRef/PS-Dyed/CS01U030G_no_batch", "PolyRef/PS-Dyed/CS01U040G_no_batch", "PolyRef/PS-Dyed/CS01U050B_20240723", "PolyRef/PS-Dyed/CS01U100B_20240724", "PolyRef/PS-Dyed/CS01U500B_20250407", "PolyRef/PS-Dyed/CS01U600R_20240313", "PolyRef/PS-Dyed/CS02U0103R_20220419", "PolyRef/PS-Dyed/CS02U0202R_20231222", "PolyRef/PS-Dyed/CS01U007R_20240620", "PolyRef/PS-Dyed/CS01U1K0B_20230926", "PolyRef/PS-Dyed/CS01U002BL_20250906", "PolyRef/PS-Dyed/CS01U003BL_202510141", "PolyRef/PS-Dyed/CS01U005BL_20251111", "PolyRef/PS-Dyed/FS01U010P_20251029-3", "PolyRef/PS-Dyed/CS01U050B_20251029-1", "PolyRef/PS-Dyed/CS01U100R_20251029-2", "PolyRef/Magnetic/MF01N020NA_no_batch", "PolyRef/Magnetic/MF01N050NA_no_batch", "PolyRef/Magnetic/MF01N100NA_20221116", "PolyRef/Magnetic/MF01N200NA_20250302", "PolyRef/Magnetic/MF01N200NA_20250403-2", "PolyRef/Magnetic/MF01N400NA_20210103", "PolyRef/Magnetic/MF01N500NA_20250314", "PolyRef/Magnetic/MF01N600NA_20221205", "PolyRef/Magnetic/MF01N800NA_20231102", "PolyRef/Magnetic/MF01N01KNA_20250901", "PolyRef/Magnetic/MS01U001NA_20221117", "PolyRef/Magnetic/MS01U002NA_20221116", "PolyRef/Magnetic/MS01U003NA_202510142", "PolyRef/Magnetic/MS01U004NA_no_batch", "PolyRef/Magnetic/MS01U005NA_20210924", "PolyRef/Magnetic/MS01U006NA_no_batch", "PolyRef/Magnetic/MS01U010NA_20210311", "PolyRef/Magnetic/MS02U010NA_20231229", "PolyRef/Magnetic/MS01U015NA_20210820", "PolyRef/Magnetic/MS01U020NA_20210922", "PolyRef/Magnetic/MS01U030NA_20210923", "PolyRef/Magnetic/MS01U040NA_待确认", "PolyRef/Magnetic/MS01U050NA_20210918", "PolyRef/Magnetic/MS01U060NA_no_batch", "PolyRef/Magnetic/MS01U100NA_no_batch", "PolyRef/Magnetic/MS01U200NA_20230223", "PolyRef/Magnetic/MS01U400NA_20240515", "PolyRef/Magnetic/MS01U500NA_20230712", "PolyRef/Magnetic/MS01U01KNA_no_batch", "PolyRef/Magnetic/MS01U035NA_20210821", "PolyRef/Magnetic/MS01U850NA_20250521", "PolyRef/Magnetic/MS01U400NA_20240627", "PolyRef/Magnetic/MF01N800NA_20251103", "PolyRef/PE/PE01NA_no_batch", "PolyRef/PP/PP01NA_no_batch", "PolyRef/PVC/PVC01NA_20260201", "RigorPrep/SpinColumn/RP01-PG-2ML_no_batch", "RigorPrep/SpinColumn/RP01-NI-2ML_no_batch", "RigorPrep/SpinColumn/RP01-DS-2ML_no_batch", "RigorMAb/HPLCColumn/RM01-PA_no_batch", "RigorMAb/HPLCColumn/RM01-WCX_no_batch", "RigorMag/BioMag/no_sku_no_batch", "RigorMag/BioMag/no_sku_no_batch"];
+
+const SERIES=[
+{id:"polyref",name:"PolyRef™",desc:"标准微球",color:"#f97316",icon:"◉",sub:["PS微球","PMMA微球","PET微球","PE微球","PP微球","PVC微球","功能化PS微球","PS荧光微球(绿)","PS荧光微球(橙红)","PS荧光微球(蓝)","PMMA荧光微球(绿)","PMMA荧光微球(橙红)","PMMA荧光微球(蓝)","染色PS微球","磁性微球"]},
+{id:"rigormag",name:"RigorMag™",desc:"生物磁珠",color:"#a855f7",icon:"⊛",sub:["生物磁珠","生物磁珠&微球"]},
+{id:"rigorprep",name:"RigorPrep™",desc:"高速离心柱",color:"#22c55e",icon:"▥",sub:["离心柱"]},
+{id:"rigormab",name:"RigorMAb™",desc:"生物色谱柱",color:"#3b82f6",icon:"▮",sub:["色谱柱"]},
+{id:"rigorplate",name:"RigorPlate™",desc:"96孔板",color:"#06b6d4",icon:"⊞",sub:["96孔板"]}];
+const QC=[{id:"dls",l:"DLS粒度",i:"📊"},{id:"sem",l:"SEM/TEM",i:"🔬"},{id:"ftir",l:"FTIR红外",i:"📈"},{id:"raman",l:"拉曼光谱",i:"🌈"},{id:"zeta",l:"Zeta电位",i:"⚡"},{id:"coa",l:"COA证书",i:"📄"}];
+const AT=[{id:"coa",l:"COA证书",i:"📄",dir:"COA"},{id:"sem",l:"电镜图",i:"🔬",dir:"SEM"},{id:"psd",l:"粒度分布",i:"📊",dir:"DLS"},{id:"ftir",l:"红外光谱",i:"📈",dir:"FTIR"},{id:"raman",l:"拉曼光谱",i:"🌈",dir:"Raman"},{id:"chromo",l:"色谱图",i:"📉",dir:"Chromatogram"},{id:"tds",l:"TDS说明",i:"📋",dir:"TDS"},{id:"sds",l:"SDS安全",i:"⚠️",dir:"SDS"},{id:"other",l:"其他",i:"📎",dir:"Other"}];
+const SC={"正常":{b:"#0d542b",t:"#34d399",d:"#34d399"},"低库存":{b:"#6b3a00",t:"#fbbf24",d:"#fbbf24"},"缺货":{b:"#5c1a1a",t:"#f87171",d:"#f87171"},"研发中":{b:"#4a1d6a",t:"#c084fc",d:"#c084fc"},"待包装":{b:"#5c4d1a",t:"#facc15",d:"#facc15"},"待处理":{b:"#3b3080",t:"#a78bfa",d:"#a78bfa"},"待开发":{b:"#1e3a5f",t:"#60a5fa",d:"#60a5fa"},"待启动":{b:"#374151",t:"#9ca3af",d:"#9ca3af"},"进行中":{b:"#4a1d6a",t:"#c084fc",d:"#c084fc"},"已完成":{b:"#0d542b",t:"#34d399",d:"#34d399"}};
+const gs=s=>SC[s]||{b:"#374151",t:"#9ca3af",d:"#9ca3af"};
+const fs=c=>{for(const s of SERIES)if(s.sub.includes(c))return s;return SERIES[0];};
+const ROOT="RIGOR_Data";
+const smap={"PS微球":"PolyRef/PS","PMMA微球":"PolyRef/PMMA","PET微球":"PolyRef/PET","PE微球":"PolyRef/PE","PP微球":"PolyRef/PP","PVC微球":"PolyRef/PVC","功能化PS微球":"PolyRef/PS-Func","PS荧光微球(绿)":"PolyRef/PS-FL-Green","PS荧光微球(橙红)":"PolyRef/PS-FL-Orange","PS荧光微球(蓝)":"PolyRef/PS-FL-Blue","PMMA荧光微球(绿)":"PolyRef/PMMA-FL-Green","PMMA荧光微球(橙红)":"PolyRef/PMMA-FL-Orange","PMMA荧光微球(蓝)":"PolyRef/PMMA-FL-Blue","染色PS微球":"PolyRef/PS-Dyed","磁性微球":"PolyRef/Magnetic","生物磁珠":"RigorMag/BioMag","生物磁珠&微球":"RigorMag/BioMag","离心柱":"RigorPrep/SpinColumn","色谱柱":"RigorMAb/HPLCColumn","96孔板":"RigorPlate/Plate"};
+function makePath(d){const base=smap[d.c]||"Other/"+d.c.replace(/[^a-zA-Z0-9\u4e00-\u9fff]/g,"_");const sku=(d.k||d.m||"item").replace(/[\\/:*?"<>|\s]+/g,"_");const bat=(d.b||"nobatch").replace(/[\\/:*?"<>|\s]+/g,"_");return ROOT+"/"+base+"/"+sku+"_"+bat;}
+
+// ═══ SUPABASE + LOCAL STORAGE (国内可用，免费) ═══
+let items, allLogs, pipe, lastSync="";
+let sbClient=null, sbConnected=false, sbSaving=false, sbPollTimer=null, _lastSbUpdate="";
+const SB_KEY="RIGOR_SB_CONFIG";
+
+function getSBConfig(){
+  try{const s=localStorage.getItem(SB_KEY);return s?JSON.parse(s):null;}catch(e){return null;}
+}
+function saveSBConfig(cfg){localStorage.setItem(SB_KEY,JSON.stringify(cfg));}
+
+async function initSupabase(cfg){
+  try{
+    sbClient=supabase.createClient(cfg.url,cfg.anonKey);
+    // Check if table exists by trying to select
+    const{data,error}=await sbClient.from("rigor_inventory").select("id,updated_at").eq("data_key","main").limit(1);
+    if(error&&error.code==="42P01"){
+      // Table doesn't exist - need user to create it
+      alert("请先在 Supabase 控制台创建表，详见同步页面的说明。");
+      sbConnected=false;return false;
+    }
+    sbConnected=true;
+    await pullFromCloud();
+    if(sbPollTimer)clearInterval(sbPollTimer);
+    sbPollTimer=setInterval(pollCloud,5000);
+    return true;
+  }catch(e){console.error("Supabase init error:",e);sbConnected=false;return false;}
+}
+
+async function pullFromCloud(){
+  if(!sbClient)return;
+  try{
+    const{data,error}=await sbClient.from("rigor_inventory").select("id,payload,updated_at").eq("data_key","main").limit(1).single();
+    if(error||!data)return;
+    _lastSbUpdate=data.updated_at;
+    const d=typeof data.payload==="string"?JSON.parse(data.payload):data.payload;
+    if(d&&d.items){
+      items=d.items;allLogs=d.logs||[];pipe=d.pipe||pipe;
+      applySeriesSubs(d.seriesSubs);
+      lastSync="☁ "+new Date().toLocaleString("zh-CN");
+      nextId=items.length?Math.max(...items.map(i=>i.id))+1:0;
+      nextPipeId=pipe.length?Math.max(...pipe.map(p=>p.id))+1:1;
+      try{localStorage.setItem("RIGOR_INV",JSON.stringify({items,logs:allLogs,pipe,seriesSubs:getSeriesSubs(),lastSync}));}catch(e){}
+      render();
+    }
+  }catch(e){console.error("Supabase pull error:",e);}
+}
+
+async function pollCloud(){
+  if(sbSaving||!sbConnected||!sbClient)return;
+  try{
+    const{data}=await sbClient.from("rigor_inventory").select("updated_at").eq("data_key","main").limit(1).single();
+    if(data&&data.updated_at!==_lastSbUpdate){
+      _lastSbUpdate=data.updated_at;
+      await pullFromCloud();
+    }
+  }catch(e){}
+}
+
+async function pushToCloud(){
+  if(!sbConnected||!sbClient)return;
+  sbSaving=true;
+  try{
+    const payload={items,logs:allLogs,pipe,seriesSubs:getSeriesSubs(),lastSync};
+    const{data,error}=await sbClient.from("rigor_inventory").upsert({data_key:"main",payload},{onConflict:"data_key"}).select("updated_at").single();
+    if(data)_lastSbUpdate=data.updated_at;
+    lastSync="☁ "+new Date().toLocaleString("zh-CN");
+  }catch(e){console.error("Supabase push error:",e);}
+  sbSaving=false;
+}
+
+function getSeriesSubs(){return SERIES.map(s=>({id:s.id,sub:s.sub}));}
+function applySeriesSubs(subs){if(!subs)return;subs.forEach(ss=>{const sr=SERIES.find(s=>s.id===ss.id);if(sr)sr.sub=ss.sub;});}
+
+function saveState(){
+  lastSync=new Date().toLocaleString("zh-CN");
+  const seriesSubs=getSeriesSubs();
+  try{localStorage.setItem("RIGOR_INV",JSON.stringify({items,logs:allLogs,pipe,seriesSubs,lastSync}));}catch(e){}
+  if(sbConnected)pushToCloud();
+}
+
+function loadFromStorage(){
+  try{
+    const s=localStorage.getItem("RIGOR_INV");
+    if(s){const d=JSON.parse(s);items=d.items;allLogs=d.logs||[];pipe=d.pipe;lastSync=d.lastSync||"";applySeriesSubs(d.seriesSubs);return true;}
+  }catch(e){}
+  return false;
+}
+
+function exportData(){
+  const data=JSON.stringify({items,logs:allLogs,pipe,seriesSubs:getSeriesSubs(),lastSync:new Date().toLocaleString("zh-CN"),exportBy:"RIGOR库存系统"},null,2);
+  const blob=new Blob([data],{type:"application/json"});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a");a.href=url;a.download="RIGOR_库存数据_"+new Date().toISOString().slice(0,10)+".json";
+  a.click();URL.revokeObjectURL(url);
+}
+function importData(){
+  const inp=document.createElement("input");inp.type="file";inp.accept=".json";
+  inp.onchange=e=>{
+    const file=e.target.files[0];if(!file)return;
+    const reader=new FileReader();
+    reader.onload=ev=>{
+      try{
+        const d=JSON.parse(ev.target.result);
+        if(!d.items||!Array.isArray(d.items)){alert("文件格式不正确");return;}
+        window._importData=d;
+        const ov=document.createElement("div");ov.className="overlay";ov.id="importOv";
+        ov.innerHTML=`<div class="modal" style="text-align:center;padding:30px">
+          <div style="font-size:40px;margin-bottom:12px">📥</div>
+          <div style="font-size:15px;font-weight:700;color:#fff;margin-bottom:8px">确认导入？</div>
+          <div style="font-size:13px;color:#9ca3af;margin-bottom:6px">将<span style="color:#f87171">覆盖</span>当前全部数据</div>
+          <div style="font-size:12px;color:#818cf8;margin-bottom:6px">${d.items.length} 条产品 · ${(d.pipe||[]).length} 条研发项目</div>
+          <div style="font-size:11px;color:#6b7280;margin-bottom:20px">导出时间: ${d.lastSync||"未知"}</div>
+          <div style="display:flex;gap:10px">
+            <button class="btn" style="background:#374151;flex:1" onclick="document.getElementById('importOv').remove()">取消</button>
+            <button class="btn" style="background:#6366f1;flex:1" onclick="confirmImport()">确认导入</button>
+          </div>
+        </div>`;
+        document.body.appendChild(ov);
+      }catch(err){alert("导入失败："+err.message);}
+    };
+    reader.readAsText(file);
+  };
+  inp.click();
+}
+function confirmImport(){
+  document.getElementById("importOv").remove();
+  const d=window._importData;if(!d)return;
+  items=d.items;allLogs=d.logs||[];pipe=d.pipe||pipe;
+  applySeriesSubs(d.seriesSubs);
+  nextId=items.length?Math.max(...items.map(i=>i.id))+1:0;
+  nextPipeId=pipe.length?Math.max(...pipe.map(p=>p.id))+1:1;
+  saveState();render();
+  window._importData=null;
+}
+function resetToDefault(){
+  const ov=document.createElement("div");ov.className="overlay";ov.id="resetOv";
+  ov.innerHTML=`<div class="modal" style="text-align:center;padding:30px">
+    <div style="font-size:40px;margin-bottom:12px">⚠️</div>
+    <div style="font-size:15px;font-weight:700;color:#f87171;margin-bottom:8px">恢复初始数据？</div>
+    <div style="font-size:13px;color:#9ca3af;margin-bottom:20px">所有修改将丢失，不可撤销！</div>
+    <div style="display:flex;gap:10px">
+      <button class="btn" style="background:#374151;flex:1" onclick="document.getElementById('resetOv').remove()">取消</button>
+      <button class="btn" style="background:#dc2626;flex:1" onclick="confirmReset()">确认恢复</button>
+    </div>
+  </div>`;
+  document.body.appendChild(ov);
+}
+async function confirmReset(){
+  document.getElementById("resetOv").remove();
+  localStorage.removeItem("RIGOR_INV");
+  if(sbConnected&&sbClient){
+    try{await sbClient.from("rigor_inventory").delete().eq("data_key","main");}catch(e){}
+  }
+  location.reload();
+}
+
+// Try to init Supabase on load
+const _sbCfg=getSBConfig();
+if(_sbCfg)initSupabase(_sbCfg);
+
+if(!loadFromStorage()){
+  items=RAW.map((d,i)=>({id:i,c:d.c,s:d.s,f:d.f,m:d.m,k:d.k,b:d.b,q:d.q,n:d.n,t:d.t,o:d.o,qc:{},logs:[],att:[]}));
+  allLogs=[];
+  pipe=[
+    {id:1,nm:"PET纳米微球多规格攻关",pr:"P0",ph:"Week 1-2",st:"进行中",tg:"300-500nm+500-1μm",nt:"50/100nm已就绪"},
+    {id:2,nm:"PE微球优化+PP验证",pr:"P0",ph:"Week 3-4",st:"待启动",tg:"PE:CV<30%,PP试2-3次",nt:"PE进展大"},
+    {id:3,nm:"PS/PMMA英文包装上架",pr:"P0",ph:"Week 4",st:"待启动",tg:"英文包装+COA→美国站",nt:"核心成熟产品"},
+    {id:4,nm:"Ni-IDA离心柱",pr:"P1",ph:"Week 1-2",st:"进行中",tg:"乙二胺两步法",nt:"走伯仪OEM"},
+    {id:5,nm:"脱盐离心柱",pr:"P1",ph:"Week 1-2",st:"进行中",tg:"Varady涂层验证",nt:"穿插Ni-IDA做"},
+    {id:6,nm:"Protein A离心柱",pr:"P1",ph:"已完成",st:"已完成",tg:"日常发货",nt:"转伯仪OEM"},
+    {id:7,nm:"Protein G离心柱",pr:"P1",ph:"Week 2",st:"待启动",tg:"换配基",nt:"1-2天"},
+    {id:8,nm:"Protein A HPLC柱",pr:"P1",ph:"Week 2-4",st:"待启动",tg:"偶联+寿命测试",nt:"半成品已有"},
+    {id:9,nm:"Bio-WCX分析柱",pr:"P1",ph:"Week 7",st:"待启动",tg:"出分离图谱",nt:"伯仪感兴趣"},
+    {id:10,nm:"PVC微球上架",pr:"Done",ph:"Week 7",st:"待包装",tg:"COA→上架",nt:"已开发完成"},
+    {id:11,nm:"Shopify独立站",pr:"P1",ph:"Week 5",st:"待启动",tg:"纳米标准品主打",nt:"Dawn模板"},
+    {id:12,nm:"Cold Email+伯仪",pr:"P1",ph:"Week 6",st:"待启动",tg:"美国PI寄样",nt:"220+引用"}
+  ];
+}
+let nextId=items.length?Math.max(...items.map(i=>i.id))+1:0;
+
+let V="dash",selId=null,srch="",serF="全部",stF="全部",subCatF="全部",ptab="all",modal=null,delMode=false;
+window._composing=false;
+// Get all unique categories (dynamic)
+function getCats(){return[...new Set(items.map(d=>d.c))].sort();}
+function getAllStatuses(){return["正常","低库存","缺货","研发中","待包装","待处理","待开发","待启动"];}
+
+function nav(v){V=v;delMode=false;pipeEditId=null;subCatF="全部";render();}
+function setFilter(sid){serF=sid;subCatF="全部";V="list";delMode=false;render();}
+function setSubCat(cat){subCatF=cat;render();}
+function toggleDelMode(){delMode=!delMode;render();}
+function copyPath(p){navigator.clipboard.writeText(p).then(()=>{});}
+
+function getFiltered(){
+  return items.filter(d=>{
+    if(serF!=="全部"){const sr=SERIES.find(s=>s.id===serF);if(sr&&!sr.sub.includes(d.c))return false;}
+    if(subCatF!=="全部"&&subCatF!=="__all__"&&d.c!==subCatF)return false;
+    if(stF!=="全部"&&d.t!==stF)return false;
+    if(srch){const q=srch.toLowerCase();return[d.s,d.m,d.k,d.f,d.c,d.o,d.b].some(v=>v&&v.toLowerCase().includes(q));}
+    return true;
+  });
+}
+
+function render(){
+  let h="";
+  if(V==="dash")h=rDash();
+  else if(V==="list")h=rList();
+  else if(V==="detail")h=rDetail();
+  else if(V==="inout")h=rInOut();
+  else if(V==="pipe")h=rPipe();
+  else if(V==="add")h=rAddEdit(null);
+  else if(V==="edit")h=rAddEdit(items.find(i=>i.id===selId));
+  else if(V==="sync")h=rSync();
+  h+=`<div class="nav">${[["dash","总览","◉"],["list","库存","☰"],["add","新增","＋"],["pipe","研发","🔬"],["sync","同步","☁"]].map(([id,l,i])=>`<button class="${V===id?"on":""}" onclick="nav('${id}')"><span style="font-size:16px">${i}</span><span>${l}</span></button>`).join("")}</div>`;
+  document.getElementById("app").innerHTML=h;
+  bindSearchBox();
+  saveState();
+}
+function doSearch(val){
+  srch=val;
+  if(val&&subCatF==="全部"&&serF!=="全部"){
+    // If searching within a series, show all products directly
+    subCatF="__all__";render();return;
+  }
+  if(!val&&subCatF==="__all__"){subCatF="全部";render();return;}
+  const el=document.getElementById("listResults");
+  if(el)el.innerHTML=rListItems();
+}
+function bindSearchBox(){
+  const sb=document.getElementById("searchBox");
+  if(!sb)return;
+  sb.addEventListener("input",function(){
+    if(!window._composing)doSearch(this.value);
+  });
+  sb.addEventListener("compositionstart",function(){window._composing=true;});
+  sb.addEventListener("compositionend",function(){window._composing=false;doSearch(this.value);});
+}
+
+// ═══ SUB-CATEGORY MANAGER ═══
+function openCatMgr(seriesId){
+  const sr=SERIES.find(s=>s.id===seriesId);if(!sr)return;
+  renderCatMgr(sr);
+}
+
+function renderCatMgr(sr){
+  let old=document.getElementById("catMgrOv");if(old)old.remove();
+  const ov=document.createElement("div");ov.className="overlay";ov.id="catMgrOv";
+  ov.onclick=e=>{if(e.target===ov)ov.remove();};
+  let h=`<div class="modal">`;
+  h+=`<div style="display:flex;align-items:center;gap:10px;margin-bottom:16px"><div style="width:36px;height:36px;border-radius:10px;background:${sr.color}20;display:flex;align-items:center;justify-content:center;font-size:16px;color:${sr.color}">${sr.icon}</div><div><div style="font-size:16px;font-weight:700;color:#fff">${sr.name}</div><div style="font-size:12px;color:#6b7280">管理子分类 · ${sr.sub.length} 个</div></div></div>`;
+  // Existing categories
+  h+=`<div style="margin-bottom:16px">`;
+  sr.sub.forEach(cat=>{
+    const cnt=items.filter(d=>d.c===cat).length;
+    h+=`<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid #1e2130"><span style="font-size:14px;color:#e5e7eb;flex:1">${cat}</span><span style="font-size:11px;color:#4b5563">${cnt}个产品</span>${cnt===0?`<button onclick="removeCat('${sr.id}','${cat}')" style="background:none;border:none;color:#f87171;cursor:pointer;font-size:14px;padding:2px 6px">✕</button>`:`<span style="font-size:11px;color:#374151;padding:2px 6px">—</span>`}</div>`;
+  });
+  h+=`</div>`;
+  // Add new
+  h+=`<div style="font-size:13px;font-weight:600;color:#818cf8;margin-bottom:8px">➕ 添加新分类</div>`;
+  h+=`<div style="display:flex;gap:8px"><input class="inp" id="newCatName" placeholder="输入分类名称，如: PA微球、PEEK微球" style="flex:1"><button class="btn" style="background:#6366f1;width:auto;padding:10px 20px" onclick="addCat('${sr.id}')">添加</button></div>`;
+  h+=`<div style="font-size:10px;color:#4b5563;margin-top:8px">提示: 只能删除没有产品的空分类。有产品的分类需要先删除或转移其下所有产品。</div>`;
+  h+=`<button class="btn" style="background:#374151;margin-top:16px" onclick="document.getElementById('catMgrOv').remove()">完成</button>`;
+  h+=`</div>`;
+  ov.innerHTML=h;document.body.appendChild(ov);
+  // Focus
+  setTimeout(()=>{const inp=document.getElementById("newCatName");if(inp)inp.focus();},100);
+}
+
+function addCat(seriesId){
+  const inp=document.getElementById("newCatName");if(!inp)return;
+  const name=inp.value.trim();
+  if(!name){return;}
+  const sr=SERIES.find(s=>s.id===seriesId);if(!sr)return;
+  if(sr.sub.includes(name)){
+    inp.value="";inp.placeholder="该分类已存在";return;
+  }
+  sr.sub.push(name);
+  saveState();
+  renderCatMgr(sr);// re-render modal
+  render();// re-render background
+}
+
+function removeCat(seriesId,catName){
+  const sr=SERIES.find(s=>s.id===seriesId);if(!sr)return;
+  const cnt=items.filter(d=>d.c===catName).length;
+  if(cnt>0)return;// safety: don't remove if products exist
+  sr.sub=sr.sub.filter(c=>c!==catName);
+  saveState();
+  renderCatMgr(sr);
+  render();
+}
+
+// ═══ DASHBOARD ═══
+function rDash(){
+  const sn=items.filter(d=>d.t==="正常").length,sl=items.filter(d=>d.t==="低库存").length,so=items.filter(d=>d.t==="缺货").length,sr2=items.filter(d=>d.t==="研发中").length;
+  let h=`<div style="padding:20px"><div style="display:flex;align-items:center;gap:12px;margin-bottom:20px"><div style="width:48px;height:48px;border-radius:14px;background:linear-gradient(135deg,#6366f1,#8b5cf6);display:flex;align-items:center;justify-content:center;font-size:24px;color:#fff">⬡</div><div><div style="font-size:20px;font-weight:700;color:#fff">RIGOR 库存 & 研发</div><div style="font-size:13px;color:#6b7280">${items.length} SKU · ${sbConnected?`<span style="color:#34d399">☁ 实时同步</span>`:(lastSync?`<span style="color:#fbbf24">本地</span>`:"")}</div></div></div>`;
+  h+=`<div class="dash-stats" style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:18px">`;
+  [{l:"正常",v:sn,c:"#34d399"},{l:"低库存",v:sl,c:"#fbbf24"},{l:"缺货",v:so,c:"#f87171"},{l:"研发中",v:sr2,c:"#c084fc"}].forEach(x=>{h+=`<div class="card" style="cursor:default"><div style="font-size:11px;color:#6b7280">${x.l}</div><div style="font-size:24px;font-weight:700;color:${x.c}">${x.v}</div></div>`;});
+  h+=`</div>`;
+  // Series
+  h+=`<div style="font-size:15px;font-weight:600;color:#9ca3af;margin-bottom:10px">📦 产品系列</div>`;
+  h+=`<div class="dash-series">`;
+  SERIES.forEach(sr=>{const cnt=items.filter(d=>sr.sub.includes(d.c)).length;const oo=items.filter(d=>sr.sub.includes(d.c)&&d.t==="缺货").length;
+    h+=`<div class="card" style="cursor:pointer" onclick="setFilter('${sr.id}')"><div style="display:flex;align-items:center;gap:12px"><div style="width:38px;height:38px;border-radius:10px;background:${sr.color}20;display:flex;align-items:center;justify-content:center;font-size:18px;color:${sr.color}">${sr.icon}</div><div style="flex:1"><div style="font-size:15px;font-weight:600;color:#fff">${sr.name}</div><div style="font-size:12px;color:#6b7280">${sr.desc} · ${cnt}个 · ${sr.sub.length}分类</div></div>${oo?`<span class="tag" style="background:#5c1a1a;color:#f87171">${oo}缺</span>`:""}<span style="color:#4b5563;font-size:18px">›</span></div></div>`;});
+  h+=`</div>`;
+  // Pipeline
+  h+=`<div style="font-size:15px;font-weight:600;color:#c084fc;margin:20px 0 10px">🔬 研发管线</div>`;
+  h+=`<div class="dash-pipe">`;
+  pipe.filter(p=>p.st!=="已完成").slice(0,6).forEach(p=>{const s=gs(p.st);const pc=p.pr==="P0"?"#f87171":"#fbbf24";
+    h+=`<div class="card" style="cursor:pointer" onclick="nav('pipe')"><div style="display:flex;align-items:center;gap:10px"><span style="font-size:11px;font-weight:700;color:${pc};padding:3px 8px;border-radius:4px;border:1px solid ${pc};flex-shrink:0">${p.pr}</span><div style="flex:1;min-width:0"><div style="font-size:14px;font-weight:600;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.nm}</div></div><span class="tag" style="background:${s.b};color:${s.t}">${p.st}</span></div></div>`;
+  });
+  h+=`</div>`;
+  h+=`<button class="sm" style="width:100%;background:#1e2130;border:1px solid #2a2e3e;color:#818cf8;margin:10px 0 18px" onclick="nav('pipe')">查看全部管线 →</button>`;
+  // Recent logs
+  if(allLogs.length){h+=`<div style="font-size:14px;font-weight:600;color:#9ca3af;margin:4px 0 8px">最近操作</div>`;allLogs.slice(-5).reverse().forEach(l=>{h+=`<div style="padding:7px 0;border-bottom:1px solid #151821;font-size:13px"><span style="color:${l.tp==="in"?"#34d399":"#f87171"}">${l.tp==="in"?"▲入库":"▼出库"}</span><span style="color:#9ca3af;margin-left:8px">${l.nm}</span><span style="color:#fff;margin-left:8px">×${l.qt}</span></div>`;});}
+  h+=`</div>`;return h;
+}
+
+// ═══ LIST ═══
+// Sub-category cards view
+function rSubCats(){
+  const sr=SERIES.find(s=>s.id===serF);if(!sr)return"";
+  let h=`<div style="padding:10px 16px"><div style="display:flex;align-items:center;gap:8px;margin-bottom:12px"><button onclick="serF='全部';subCatF='全部';render()" style="background:none;border:none;color:#6b7280;font-size:13px;cursor:pointer">← 全部系列</button></div>`;
+  h+=`<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px"><div style="width:36px;height:36px;border-radius:10px;background:${sr.color}20;display:flex;align-items:center;justify-content:center;font-size:16px;color:${sr.color}">${sr.icon}</div><div><div style="font-size:17px;font-weight:700;color:#fff">${sr.name}</div><div style="font-size:12px;color:#6b7280">${sr.sub.length} 个子分类</div></div></div>`;
+  h+=`<div class="sub-cat-grid" style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px">`;
+  sr.sub.forEach(cat=>{
+    const catItems=items.filter(d=>d.c===cat);
+    const cnt=catItems.length;
+    const normal=catItems.filter(d=>d.t==="正常").length;
+    const low=catItems.filter(d=>d.t==="低库存").length;
+    const out=catItems.filter(d=>d.t==="缺货").length;
+    const rd=catItems.filter(d=>d.t==="研发中").length;
+    const eCat=cat.replace(/'/g,"\\'");
+    h+=`<div class="card" style="cursor:pointer;position:relative"><div onclick="setSubCat('${eCat}')" style="padding-bottom:4px"><div style="font-size:14px;font-weight:600;color:#fff;margin-bottom:4px">${cat}</div><div style="font-size:20px;font-weight:700;color:${sr.color};margin-bottom:4px">${cnt}</div><div style="display:flex;gap:4px;flex-wrap:wrap">`;
+    if(normal)h+=`<span style="font-size:9px;padding:1px 5px;border-radius:3px;background:#0d542b;color:#34d399">${normal}正常</span>`;
+    if(low)h+=`<span style="font-size:9px;padding:1px 5px;border-radius:3px;background:#6b3a00;color:#fbbf24">${low}低</span>`;
+    if(out)h+=`<span style="font-size:9px;padding:1px 5px;border-radius:3px;background:#5c1a1a;color:#f87171">${out}缺</span>`;
+    if(rd)h+=`<span style="font-size:9px;padding:1px 5px;border-radius:3px;background:#4a1d6a;color:#c084fc">${rd}研发</span>`;
+    h+=`</div></div><div style="display:flex;gap:6px;padding-top:6px;border-top:1px solid #1e2130"><button onclick="event.stopPropagation();editCat('${sr.id}','${eCat}')" class="edit-btn" style="flex:1;text-align:center;font-size:10px">✏️ 编辑</button>`;
+    h+=`<button onclick="event.stopPropagation();deleteCat('${sr.id}','${eCat}',${cnt})" class="del-btn" style="flex:1;text-align:center;font-size:10px">🗑️ 删除</button>`;
+    h+=`</div></div>`;
+  });
+  // Add new category card
+  h+=`<div class="card" onclick="addNewCat('${sr.id}')" style="cursor:pointer;display:flex;align-items:center;justify-content:center;min-height:100px;border-style:dashed;border-color:#2a2e3e"><div style="text-align:center"><div style="font-size:24px;color:#4b5563;margin-bottom:4px">＋</div><div style="font-size:12px;color:#6b7280">添加新分类</div></div></div>`;
+  h+=`</div>`;
+  h+=`<button onclick="subCatF='__all__';render()" style="width:100%;margin-top:12px;padding:10px;border-radius:8px;border:1px solid #2a2e3e;background:#1e2130;color:#818cf8;font-size:13px;cursor:pointer">查看全部 ${sr.name} 产品 →</button>`;
+  h+=`</div>`;
+  return h;
+}
+
+function editCat(seriesId,catName){
+  const sr=SERIES.find(s=>s.id===seriesId);if(!sr)return;
+  const cnt=items.filter(d=>d.c===catName).length;
+  const ov=document.createElement("div");ov.className="overlay";ov.id="editCatOv";
+  ov.onclick=e=>{if(e.target===ov)ov.remove();};
+  let h=`<div class="modal" style="padding:24px">`;
+  h+=`<div style="font-size:16px;font-weight:700;color:#fff;margin-bottom:16px">✏️ 编辑子分类</div>`;
+  h+=`<div style="font-size:12px;color:#6b7280;margin-bottom:4px">分类名称</div>`;
+  h+=`<input class="inp" id="editCatName" value="${catName}" style="margin-bottom:12px">`;
+  h+=`<div style="font-size:12px;color:#6b7280;margin-bottom:4px">所属系列</div>`;
+  h+=`<select class="inp" id="editCatSeries" style="margin-bottom:12px">`;
+  SERIES.forEach(s=>{h+=`<option value="${s.id}"${s.id===seriesId?" selected":""}>${s.name} (${s.desc})</option>`;});
+  h+=`</select>`;
+  h+=`<div style="font-size:11px;color:#4b5563;margin-bottom:16px;padding:8px;background:#111318;border-radius:6px">当前有 <span style="color:#fff;font-weight:600">${cnt}</span> 个产品。修改名称会同步更新所有产品，移动系列会将产品一起转移。</div>`;
+  h+=`<div style="display:flex;gap:10px">`;
+  h+=`<button class="btn" style="background:#374151;flex:1" onclick="document.getElementById('editCatOv').remove()">取消</button>`;
+  h+=`<button class="btn" style="background:#f59e0b;flex:1" onclick="confirmEditCat('${seriesId}','${catName.replace(/'/g,"\\'")}')">保存</button>`;
+  h+=`</div></div>`;
+  ov.innerHTML=h;document.body.appendChild(ov);
+  setTimeout(()=>{const inp=document.getElementById("editCatName");if(inp){inp.focus();inp.select();}},100);
+}
+
+function confirmEditCat(oldSeriesId,oldName){
+  const newName=document.getElementById("editCatName").value.trim();
+  const newSeriesId=document.getElementById("editCatSeries").value;
+  document.getElementById("editCatOv").remove();
+  if(!newName)return;
+  const oldSr=SERIES.find(s=>s.id===oldSeriesId);
+  const newSr=SERIES.find(s=>s.id===newSeriesId);
+  if(!oldSr||!newSr)return;
+  // Check duplicate in target series
+  if(newName!==oldName&&newSr.sub.includes(newName)){alert("目标系列中已有同名分类「"+newName+"」");return;}
+  // Rename in old series
+  const idx=oldSr.sub.indexOf(oldName);
+  if(oldSeriesId===newSeriesId){
+    // Same series: just rename
+    if(idx!==-1)oldSr.sub[idx]=newName;
+  }else{
+    // Move to new series
+    if(idx!==-1)oldSr.sub.splice(idx,1);
+    if(!newSr.sub.includes(newName))newSr.sub.push(newName);
+  }
+  // Update all products
+  if(newName!==oldName){items.forEach(d=>{if(d.c===oldName)d.c=newName;});}
+  saveState();render();
+}
+
+function deleteCat(seriesId,catName,cnt){
+  const sr=SERIES.find(s=>s.id===seriesId);if(!sr)return;
+  const ov=document.createElement("div");ov.className="overlay";ov.id="delCatOv";
+  ov.onclick=e=>{if(e.target===ov)ov.remove();};
+  let h=`<div class="modal" style="text-align:center;padding:30px">`;
+  h+=`<div style="font-size:40px;margin-bottom:12px">🗑️</div>`;
+  h+=`<div style="font-size:15px;font-weight:700;color:#fff;margin-bottom:8px">删除分类？</div>`;
+  h+=`<div style="font-size:13px;color:#9ca3af;margin-bottom:8px">「<span style="color:#f87171">${catName}</span>」将从 ${sr.name} 中移除</div>`;
+  if(cnt>0){
+    h+=`<div style="font-size:12px;color:#fbbf24;margin-bottom:16px;padding:8px 12px;background:#1a1d27;border-radius:8px">⚠️ 该分类下有 <span style="color:#fff;font-weight:700">${cnt}</span> 个产品，删除后这些产品也会一起被删除！</div>`;
+  }
+  h+=`<div style="display:flex;gap:10px">`;
+  h+=`<button class="btn" style="background:#374151;flex:1" onclick="document.getElementById('delCatOv').remove()">取消</button>`;
+  h+=`<button class="btn" style="background:#dc2626;flex:1" onclick="confirmDelCat('${seriesId}','${catName.replace(/'/g,"\\'")}')">确认删除${cnt>0?" (含"+cnt+"个产品)":""}</button>`;
+  h+=`</div></div>`;
+  ov.innerHTML=h;document.body.appendChild(ov);
+}
+
+function confirmDelCat(seriesId,catName){
+  document.getElementById("delCatOv").remove();
+  const sr=SERIES.find(s=>s.id===seriesId);if(!sr)return;
+  sr.sub=sr.sub.filter(c=>c!==catName);
+  items=items.filter(d=>d.c!==catName);
+  saveState();render();
+}
+
+function addNewCat(seriesId){
+  const sr=SERIES.find(s=>s.id===seriesId);if(!sr)return;
+  const ov=document.createElement("div");ov.className="overlay";ov.id="addCatOv";
+  ov.onclick=e=>{if(e.target===ov)ov.remove();};
+  ov.innerHTML=`<div class="modal" style="padding:24px">
+    <div style="font-size:16px;font-weight:700;color:#fff;margin-bottom:14px">➕ 添加新分类到 ${sr.name}</div>
+    <div style="font-size:12px;color:#6b7280;margin-bottom:6px">分类名称</div>
+    <input class="inp" id="addCatInput" placeholder="如: PA微球、PEEK微球、PLA微球" style="margin-bottom:16px">
+    <div style="display:flex;gap:10px">
+      <button class="btn" style="background:#374151;flex:1" onclick="document.getElementById('addCatOv').remove()">取消</button>
+      <button class="btn" style="background:#6366f1;flex:1" onclick="confirmAddCat('${seriesId}')">确认添加</button>
+    </div>
+  </div>`;
+  document.body.appendChild(ov);
+  setTimeout(()=>{const inp=document.getElementById("addCatInput");if(inp)inp.focus();},100);
+}
+
+function confirmAddCat(seriesId){
+  const name=document.getElementById("addCatInput").value.trim();
+  document.getElementById("addCatOv").remove();
+  if(!name)return;
+  const sr=SERIES.find(s=>s.id===seriesId);if(!sr)return;
+  if(sr.sub.includes(name)){alert("该分类已存在");return;}
+  sr.sub.push(name);
+  saveState();render();
+}
+
+function rListItems(){
+  const fl=getFiltered();
+  let h=`<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 20px 8px"><span style="font-size:12px;color:#4b5563">${fl.length} 条记录${subCatF!=="全部"&&subCatF!=="__all__"?` · ${subCatF}`:""}</span><button onclick="toggleDelMode()" style="font-size:11px;padding:4px 12px;border-radius:6px;border:1px solid ${delMode?'#f87171':'#2a2e3e'};background:${delMode?'#5c1a1a':'transparent'};color:${delMode?'#f87171':'#6b7280'};cursor:pointer">${delMode?'✓ 完成':'🗑️ 管理'}</button></div>`;
+  h+=`<div style="padding:0 10px">`;
+  fl.forEach(d=>{const st=gs(d.t);const sr=fs(d.c);const qd=QC.filter(q=>d.qc[q.id]).length;
+    h+=`<div class="item" onclick="${delMode?'':`selId=${d.id};V='detail';render()`}"><div style="width:6px;height:6px;border-radius:50%;background:${st.d};flex-shrink:0"></div><div style="flex:1;min-width:0"><div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap"><span style="font-size:15px;font-weight:600;color:#fff">${d.s||"—"}</span><span style="font-size:11px;color:${sr.color}">${d.c}</span>${d.f&&d.f!=="无"&&d.f!==""?`<span style="font-size:10px;padding:1px 6px;border-radius:3px;background:#1e2130;color:#818cf8">${d.f}</span>`:""}</div><div style="font-size:12px;color:#4b5563;margin-top:2px">${d.m||""}${d.k?" · "+d.k:""}${qd?` <span style="color:${qd>=6?"#34d399":"#fbbf24"}">QC ${qd}/6</span>`:""}</div></div><div style="text-align:right;flex-shrink:0"><div style="font-size:16px;font-weight:700;color:${st.t}">${d.n>0?d.n:"—"}</div><span class="tag" style="background:${st.b};color:${st.t}">${d.t}</span></div>${delMode?`<button onclick="event.stopPropagation();doDelete(${d.id})" style="background:none;border:none;color:#f87171;cursor:pointer;font-size:18px;padding:6px 8px;flex-shrink:0">✕</button>`:""}</div>`;
+  });
+  if(!fl.length)h+=`<div style="text-align:center;padding:40px;color:#4b5563">无匹配产品</div>`;
+  h+=`</div>`;return h;
+}
+
+function rList(){
+  // Show sub-categories when a series is selected but no sub-cat chosen and no search
+  const showSubCats=(serF!=="全部"&&subCatF==="全部"&&!srch&&stF==="全部");
+
+  let h=`<div class="bar"><input class="inp" id="searchBox" placeholder="搜索粒径、型号、货号..." value="${srch}" style="margin-bottom:6px">`;
+  h+=`<div style="display:flex;gap:5px;overflow-x:auto;padding-bottom:4px"><button class="sm" onclick="serF='全部';subCatF='全部';render()" style="background:${serF==="全部"?"#6366f1":"#1e2130"};border:1px solid #2a2e3e;white-space:nowrap">全部</button>`;
+  SERIES.forEach(s=>{h+=`<button class="sm" onclick="serF='${s.id}';subCatF='全部';stF='全部';render()" style="background:${serF===s.id?s.color:"#1e2130"};border:1px solid ${serF===s.id?s.color:"#2a2e3e"};white-space:nowrap">${s.name}</button>`;});
+  h+=`</div>`;
+  // Sub-category breadcrumb when viewing a specific sub-cat
+  if(subCatF!=="全部"){
+    const sr=SERIES.find(s=>s.id===serF);
+    h+=`<div style="display:flex;align-items:center;gap:6px;margin-top:6px;flex-wrap:wrap"><button onclick="subCatF='全部';render()" style="font-size:11px;padding:3px 10px;border-radius:6px;border:1px solid ${sr?sr.color:"#2a2e3e"};background:transparent;color:${sr?sr.color:"#9ca3af"};cursor:pointer">← ${sr?sr.name:"返回"}</button>`;
+    if(subCatF!=="__all__")h+=`<span style="font-size:12px;color:#fff;font-weight:600">${subCatF}</span>`;
+    else h+=`<span style="font-size:12px;color:#fff;font-weight:600">全部产品</span>`;
+    h+=`</div>`;
+  }
+  if(!showSubCats){
+    h+=`<div style="display:flex;gap:4px;margin-top:5px;flex-wrap:wrap">`;
+    ["全部","正常","低库存","缺货","研发中","待包装"].forEach(st=>{const g=gs(st==="全部"?"正常":st);h+=`<button onclick="stF='${st}';render()" style="font-size:10px;padding:2px 8px;border-radius:10px;border:none;background:${stF===st?g.b:"#1a1d27"};color:${stF===st?g.t:"#6b7280"};cursor:pointer">${st}</button>`;});
+    h+=`</div>`;
+  }
+  h+=`</div>`;
+
+  if(showSubCats){
+    h+=rSubCats();
+  }else{
+    h+=`<div id="listResults">${rListItems()}</div>`;
+  }
+  return h;
+}
+
+// ═══ ADD / EDIT FORM ═══
+function rAddEdit(d){
+  const isEdit=!!d;
+  const title=isEdit?"✏️ 编辑产品":"＋ 新增产品";
+  const backView=isEdit?"detail":"list";
+  const cats=getCats();
+  let h=`<div style="padding:20px"><button onclick="V='${backView}';render()" style="background:none;border:none;color:#6b7280;font-size:13px;cursor:pointer;margin-bottom:12px">← 返回</button>`;
+  h+=`<div style="font-size:19px;font-weight:700;color:${isEdit?"#fbbf24":"#818cf8"};margin-bottom:16px">${title}</div>`;
+  // Category
+  h+=`<div class="form-row"><div class="form-label">产品分类 *（可选已有或输入新分类）</div><select class="inp" id="fCat" onchange="if(this.value==='__new__')document.getElementById('fCatNew').style.display='block';else document.getElementById('fCatNew').style.display='none'"><option value="">请选择</option>`;
+  cats.forEach(c=>{h+=`<option value="${c}"${d&&d.c===c?" selected":""}>${c}</option>`;});
+  h+=`<option value="__new__">➕ 输入新分类...</option></select>`;
+  h+=`<input class="inp" id="fCatNew" placeholder="输入新分类名称，如: PE微球" style="display:none;margin-top:6px"></div>`;
+  // Fields - wrapped in grid
+  h+=`<div class="form-grid">`;
+  const fields=[
+    ["s","粒径/规格 *","如 100nm, 2mL, 4.6×50mm"],
+    ["f","官能团/类型","如 羧基-COOH, 蛋白A, 无"],
+    ["m","型号","如 PS01010CM"],
+    ["k","货号","如 PS02N100NA"],
+    ["b","发货批号","如 20260316"],
+  ];
+  fields.forEach(([key,label,ph])=>{
+    h+=`<div class="form-row"><div class="form-label">${label}</div><input class="inp" id="f_${key}" value="${d?d[key]||"":""}" placeholder="${ph}"></div>`;
+  });
+  // Quantity
+  h+=`<div class="form-row"><div class="form-label">库存数量</div><input class="inp" type="number" id="f_n" value="${d?d.n:0}"></div>`;
+  // Status
+  h+=`<div class="form-row"><div class="form-label">库存状态</div><select class="inp" id="f_t">`;
+  getAllStatuses().forEach(s=>{h+=`<option value="${s}"${d&&d.t===s?" selected":""}>${s}</option>`;});
+  h+=`</select></div>`;
+  h+=`</div>`;
+  // Notes (full width)
+  h+=`<div class="form-row"><div class="form-label">备注</div><textarea class="inp" id="f_o" rows="2" style="resize:vertical">${d?d.o||"":""}</textarea></div>`;
+
+  if(isEdit){
+    h+=`<div style="display:flex;gap:8px"><button class="btn" style="background:#f59e0b" onclick="doEdit(${d.id})">保存修改</button></div>`;
+    h+=`<button class="del-btn" style="width:100%;margin-top:10px;padding:10px" onclick="doDelete(${d.id})">🗑️ 删除此产品</button>`;
+  } else {
+    h+=`<button class="btn" style="background:#6366f1" onclick="doAdd()">确认新增</button>`;
+  }
+  h+=`</div>`;return h;
+}
+
+function getFormData(){
+  let cat=document.getElementById("fCat").value;
+  if(cat==="__new__"){cat=document.getElementById("fCatNew").value.trim();}
+  if(!cat)return null;
+  const s=document.getElementById("f_s").value.trim();
+  if(!s)return null;
+  return{
+    c:cat,
+    s:s,
+    f:document.getElementById("f_f").value.trim(),
+    m:document.getElementById("f_m").value.trim(),
+    k:document.getElementById("f_k").value.trim(),
+    b:document.getElementById("f_b").value.trim(),
+    n:parseInt(document.getElementById("f_n").value)||0,
+    t:document.getElementById("f_t").value,
+    o:document.getElementById("f_o").value.trim()
+  };
+}
+
+function doAdd(){
+  const data=getFormData();
+  if(!data){alert("请填写产品分类和粒径/规格");return;}
+  const newItem={id:nextId++,...data,q:String(data.n),qc:{},logs:[],att:[]};
+  items.push(newItem);
+  // Add to series if new category
+  const sr=fs(data.c);
+  if(!sr.sub.includes(data.c)){SERIES[0].sub.push(data.c);}// default to PolyRef
+  selId=newItem.id;V="detail";render();
+}
+
+function doEdit(id){
+  const data=getFormData();
+  if(!data){alert("请填写产品分类和粒径/规格");return;}
+  const d=items.find(i=>i.id===id);if(!d)return;
+  Object.assign(d,data);d.q=String(data.n);
+  if(!fs(data.c).sub.includes(data.c)){SERIES[0].sub.push(data.c);}
+  V="detail";render();
+}
+
+function doDelete(id){
+  const d=items.find(i=>i.id===id);
+  const name=d?(d.s+" "+d.c):"此产品";
+  const ov=document.createElement("div");ov.className="overlay";ov.id="delOv";
+  ov.innerHTML=`<div class="modal" style="text-align:center;padding:30px">
+    <div style="font-size:40px;margin-bottom:12px">🗑️</div>
+    <div style="font-size:15px;font-weight:700;color:#fff;margin-bottom:8px">确认删除？</div>
+    <div style="font-size:13px;color:#9ca3af;margin-bottom:20px">即将删除「<span style="color:#f87171">${name}</span>」<br>此操作不可撤销</div>
+    <div style="display:flex;gap:10px">
+      <button class="btn" style="background:#374151;flex:1" onclick="document.getElementById('delOv').remove()">取消</button>
+      <button class="btn" style="background:#dc2626;flex:1" onclick="confirmDelete(${id})">确认删除</button>
+    </div>
+  </div>`;
+  document.body.appendChild(ov);
+}
+function confirmDelete(id){
+  document.getElementById("delOv").remove();
+  items=items.filter(i=>i.id!==id);
+  V="list";selId=null;render();
+}
+
+// ═══ DETAIL ═══
+function rDetail(){
+  const d=items.find(i=>i.id===selId);if(!d)return"";
+  const st=gs(d.t);const sr=fs(d.c);const fp=makePath(d);
+  let h=`<div style="padding:20px"><button onclick="V='list';render()" style="background:none;border:none;color:#6b7280;font-size:13px;cursor:pointer;margin-bottom:12px">← 返回列表</button>`;
+  // Header
+  h+=`<div class="card" style="display:flex;align-items:center;gap:14px;cursor:default"><div style="width:48px;height:48px;border-radius:12px;background:${sr.color}20;display:flex;align-items:center;justify-content:center;font-size:22px;color:${sr.color}">${sr.icon}</div><div style="flex:1"><div style="font-size:18px;font-weight:700;color:#fff">${d.s||"—"}</div><div style="font-size:13px;color:${sr.color}">${sr.name} · ${d.c}</div>${d.f&&d.f!=="无"?`<div style="font-size:12px;color:#818cf8">${d.f}</div>`:""}</div><div style="text-align:center"><div style="font-size:30px;font-weight:700;color:${st.t}">${d.n}</div><span class="tag" style="background:${st.b};color:${st.t}">${d.t}</span></div></div>`;
+  // Info + edit button
+  h+=`<div class="card" style="cursor:default"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><span style="font-size:12px;font-weight:600;color:#9ca3af">产品信息</span><div style="display:flex;gap:6px"><button class="edit-btn" onclick="V='edit';render()">✏️ 编辑</button><button class="del-btn" onclick="doDelete(${d.id})">🗑️ 删除</button></div></div>`;
+  h+=`<div class="detail-info" style="display:grid;grid-template-columns:1fr 1fr;gap:6px 16px;font-size:13px">`;
+  [["型号",d.m],["货号",d.k],["批号",d.b],["库存原始",d.q||String(d.n)]].forEach(([l,v])=>{h+=`<div><span style="color:#6b7280">${l}：</span><span style="color:#e5e7eb">${v||"—"}</span></div>`;});
+  h+=`</div>${d.o?`<div style="margin-top:6px;padding:5px 7px;border-radius:5px;background:#1a1d27;color:#fbbf24;font-size:10px">${d.o}</div>`:""}`;
+  h+=`<div style="margin-top:8px;padding-top:8px;border-top:1px solid #1e2130"><div style="font-size:10px;color:#60a5fa;margin-bottom:4px">📁 ${fp}/</div><button class="copy-btn" onclick="copyPath('${fp}/')">复制路径</button></div></div>`;
+  // In/Out buttons
+  h+=`<div style="display:flex;gap:8px;margin-bottom:10px"><button class="btn" style="background:#059669" onclick="startIO(${d.id},'in')">▲ 入库</button><button class="btn" style="background:#dc2626" onclick="startIO(${d.id},'out')">▼ 出库</button></div>`;
+  // QC
+  h+=`<div class="card" style="cursor:default"><div style="font-size:12px;font-weight:600;color:#c084fc;margin-bottom:8px">🧪 QC检测 (${d.b||"—"})</div><div class="qcg">`;
+  QC.forEach(q=>{const on=d.qc[q.id];h+=`<button class="qcb${on?" on":""}" onclick="toggleQC(${d.id},'${q.id}')"><span style="font-size:14px">${on?"✓":q.i}</span><span>${q.l}</span></button>`;});
+  h+=`</div></div>`;
+  // Attachments
+  h+=`<div class="card" style="cursor:default"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><span style="font-size:12px;font-weight:600;color:#9ca3af">📎 附件</span><button class="sm" style="background:#2563eb" onclick="openAttach(${d.id})">+ 添加</button></div>`;
+  if(!d.att||!d.att.length)h+=`<div style="font-size:11px;color:#4b5563;text-align:center;padding:10px">暂无附件</div>`;
+  else d.att.forEach(a=>{const at=AT.find(t=>t.id===a.tp)||AT[8];const full=fp+"/"+at.dir+"/"+a.nm;
+    h+=`<div style="display:flex;align-items:center;gap:6px;padding:6px 0;border-bottom:1px solid #1a1d27"><span style="font-size:14px">${at.i}</span><div style="flex:1;min-width:0"><div style="font-size:11px;color:#e5e7eb">${a.nm}</div><div style="font-size:9px;color:#7dd3fc;font-family:monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${full}</div><div style="font-size:9px;color:#4b5563">${at.l} · ${a.dt} <button class="copy-btn" onclick="event.stopPropagation();copyPath('${full}')">复制</button></div></div><button onclick="delAtt(${d.id},${a.aid})" style="background:none;border:none;color:#6b7280;cursor:pointer;font-size:14px">✕</button></div>`;
+  });
+  h+=`</div>`;
+  // Logs
+  h+=`<div class="card" style="cursor:default"><div style="font-size:12px;font-weight:600;color:#9ca3af;margin-bottom:6px">📋 出入库记录</div>`;
+  if(!d.logs.length)h+=`<div style="font-size:11px;color:#4b5563;text-align:center;padding:8px">暂无</div>`;
+  else d.logs.slice().reverse().forEach(l=>{h+=`<div style="display:flex;align-items:center;gap:6px;padding:4px 0;border-bottom:1px solid #1a1d27;font-size:11px"><span style="color:${l.tp==="in"?"#34d399":"#f87171"};font-weight:600">${l.tp==="in"?"▲入":"▼出"}</span><span style="color:#fff">×${l.qt}</span><span style="color:#4b5563">${l.pv}→${l.nx}</span>${l.bt?`<span style="color:#818cf8;font-size:9px">${l.bt}</span>`:""}<span style="color:#4b5563;margin-left:auto">${l.dt}</span></div>`;});
+  h+=`</div></div>`;return h;
+}
+
+// ═══ IN/OUT ═══
+function rInOut(){
+  const d=items.find(i=>i.id===selId);if(!d)return"";const isIn=modal.tp==="in";const cl=isIn?"#059669":"#dc2626";
+  let h=`<div style="padding:16px"><button onclick="V='detail';modal=null;render()" style="background:none;border:none;color:#6b7280;font-size:12px;cursor:pointer;margin-bottom:10px">← 返回</button>`;
+  h+=`<div style="font-size:17px;font-weight:700;color:${cl};margin-bottom:14px">${isIn?"▲ 入库":"▼ 出库"}</div>`;
+  h+=`<div class="card" style="cursor:default"><div style="font-size:13px;color:#fff">${d.s} · ${d.c}</div><div style="font-size:11px;color:#6b7280">当前: ${d.n}</div></div>`;
+  h+=`<div class="form-row"><div class="form-label">数量 *</div><input class="inp" type="number" id="ioQty" placeholder="输入数量"></div>`;
+  h+=`<div class="form-row"><div class="form-label">批号</div><input class="inp" id="ioBat" placeholder="如 20260316"></div>`;
+  h+=`<div class="form-row"><div class="form-label">日期</div><input class="inp" type="date" id="ioDt" value="${new Date().toISOString().slice(0,10)}"></div>`;
+  h+=`<div class="form-row"><div class="form-label">备注</div><textarea class="inp" id="ioNt" rows="2" style="resize:vertical"></textarea></div>`;
+  h+=`<button class="btn" style="background:${cl}" onclick="doIO()">确认${isIn?"入库":"出库"}</button></div>`;
+  return h;
+}
+
+function startIO(id,tp){selId=id;modal={tp};V="inout";render();}
+function doIO(){
+  const d=items.find(i=>i.id===selId);if(!d)return;
+  const qt=parseInt(document.getElementById("ioQty").value);if(!qt||qt<=0)return alert("请输入数量");
+  const bt=document.getElementById("ioBat").value,dt=document.getElementById("ioDt").value;
+  const pv=d.n,nx=modal.tp==="in"?d.n+qt:Math.max(0,d.n-qt);
+  d.n=nx;d.t=nx===0?"缺货":nx<=5?"低库存":"正常";
+  if(modal.tp==="in"&&bt)d.b=bt;
+  d.logs.push({tp:modal.tp,qt,bt,dt,pv,nx});
+  allLogs.push({tp:modal.tp,qt,dt,nm:d.s+" "+d.c});
+  modal=null;V="detail";render();
+}
+
+function toggleQC(id,qid){const d=items.find(i=>i.id===id);if(d){d.qc[qid]=!d.qc[qid];render();}}
+
+function openAttach(id){
+  const d=items.find(i=>i.id===id);if(!d)return;const fp=makePath(d);
+  const ov=document.createElement("div");ov.className="overlay";ov.id="attOv";ov.onclick=e=>{if(e.target===ov)ov.remove();};
+  const sku=d.k||d.m||"item",bat=d.b||"nobatch";
+  let h=`<div class="modal"><div style="font-size:14px;font-weight:700;color:#fff;margin-bottom:10px">添加附件</div>`;
+  h+=`<div style="font-size:10px;color:#60a5fa;margin-bottom:8px">📁 ${fp}/</div>`;
+  h+=`<div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px">`;
+  AT.forEach((a,i)=>{h+=`<button class="sm attT" data-t="${a.id}" data-dir="${a.dir}" onclick="pickAT(this)" style="background:${i===0?"#6366f120":"#111318"};border:1px solid ${i===0?"#6366f1":"#2a2e3e"};color:${i===0?"#818cf8":"#9ca3af"}">${a.i} ${a.l}</button>`;});
+  h+=`</div><div class="form-label">文件名</div><input class="inp" id="attNm" value="COA_${sku}_${bat}.pdf" oninput="updPrev()" style="margin-bottom:6px">`;
+  h+=`<div class="path-box" id="attPrev">${fp}/COA/COA_${sku}_${bat}.pdf</div>`;
+  h+=`<div style="font-size:10px;color:#9ca3af;margin:8px 0;padding:6px;background:#111318;border-radius:6px">将文件放入上述路径即可关联</div>`;
+  h+=`<div style="display:flex;gap:8px"><button class="btn" style="background:#374151" onclick="document.getElementById('attOv').remove()">取消</button><button class="btn" style="background:#6366f1" onclick="addAtt(${id})">确认</button></div></div>`;
+  ov.innerHTML=h;document.body.appendChild(ov);
+  window._at={id:"coa",dir:"COA"};window._fp=fp;
+}
+function pickAT(btn){
+  window._at={id:btn.dataset.t,dir:btn.dataset.dir};
+  document.querySelectorAll(".attT").forEach(b=>{b.style.background="#111318";b.style.borderColor="#2a2e3e";b.style.color="#9ca3af";});
+  btn.style.background="#6366f120";btn.style.borderColor="#6366f1";btn.style.color="#818cf8";
+  const d=items.find(i=>i.id===selId);const sku=d.k||d.m||"item",bat=d.b||"nobatch";
+  document.getElementById("attNm").value=`${window._at.dir}_${sku}_${bat}.pdf`;
+  updPrev();
+}
+function updPrev(){document.getElementById("attPrev").textContent=window._fp+"/"+window._at.dir+"/"+document.getElementById("attNm").value;}
+function addAtt(id){
+  const nm=document.getElementById("attNm").value.trim();if(!nm)return;
+  const d=items.find(i=>i.id===id);
+  d.att.push({aid:Date.now(),tp:window._at.id,dir:window._at.dir,nm,dt:new Date().toISOString().slice(0,10)});
+  document.getElementById("attOv").remove();render();
+}
+function delAtt(id,aid){const d=items.find(i=>i.id===id);d.att=d.att.filter(a=>a.aid!==aid);render();}
+
+// ═══ PIPELINE ═══
+let pipeEditId=null; // null=list, -1=new, else=editing id
+let nextPipeId=pipe.length?Math.max(...pipe.map(p=>p.id))+1:1;
+
+function rPipe(){
+  if(pipeEditId!==null) return rPipeEdit();
+  const tabs=[{id:"all",l:"全部"},{id:"P0",l:"🔴 P0"},{id:"P1",l:"🟠 P1"},{id:"Done",l:"✅ 完成"}];
+  const fl=pipe.filter(p=>ptab==="all"||p.pr===ptab||(ptab==="Done"&&p.st==="已完成"));
+  let h=`<div style="padding:16px"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><div style="font-size:17px;font-weight:700;color:#fff">🔬 研发管线</div><button class="sm" style="background:#6366f1" onclick="pipeEditId=-1;render()">＋ 新增项目</button></div>`;
+  h+=`<div style="display:flex;gap:6px;margin-bottom:14px">`;
+  tabs.forEach(t=>{h+=`<button class="sm" onclick="ptab='${t.id}';render()" style="background:${ptab===t.id?"#6366f1":"#1e2130"};border:1px solid ${ptab===t.id?"#6366f1":"#2a2e3e"}">${t.l}</button>`;});
+  h+=`</div>`;
+  if(!fl.length)h+=`<div style="text-align:center;padding:30px;color:#4b5563">无匹配项目</div>`;
+  fl.forEach(p=>{const s=gs(p.st);const pc=p.pr==="P0"?"#f87171":p.pr==="P1"?"#fbbf24":"#34d399";
+    h+=`<div class="card" style="cursor:default"><div style="display:flex;align-items:center;gap:8px;margin-bottom:6px"><span style="font-size:10px;font-weight:700;color:${pc};padding:2px 6px;border-radius:4px;border:1px solid ${pc}">${p.pr}</span><span style="font-size:13px;font-weight:600;color:#fff;flex:1">${p.nm}</span><button class="sm" onclick="cyclePipe(${p.id})" style="background:${s.b};color:${s.t};border:1px solid ${s.t}40">${p.st}</button></div>`;
+    h+=`<div style="font-size:11px;color:#9ca3af">${p.tg}</div>`;
+    h+=`<div style="font-size:10px;color:#6b7280;margin-top:2px">${p.ph}</div>`;
+    if(p.nt)h+=`<div style="font-size:10px;color:#fbbf24;margin-top:4px;padding:4px 6px;background:#1a1d27;border-radius:4px">${p.nt}</div>`;
+    h+=`<div style="display:flex;gap:6px;margin-top:8px;padding-top:8px;border-top:1px solid #1e2130"><button class="edit-btn" onclick="pipeEditId=${p.id};render()">✏️ 编辑</button><button class="del-btn" onclick="delPipe(${p.id})">🗑️ 删除</button></div>`;
+    h+=`</div>`;
+  });
+  h+=`</div>`;return h;
+}
+
+function rPipeEdit(){
+  const isNew=pipeEditId===-1;
+  const p=isNew?null:pipe.find(x=>x.id===pipeEditId);
+  const title=isNew?"＋ 新增研发项目":"✏️ 编辑研发项目";
+  let h=`<div style="padding:16px"><button onclick="pipeEditId=null;render()" style="background:none;border:none;color:#6b7280;font-size:12px;cursor:pointer;margin-bottom:10px">← 返回管线</button>`;
+  h+=`<div style="font-size:17px;font-weight:700;color:${isNew?"#818cf8":"#fbbf24"};margin-bottom:14px">${title}</div>`;
+  // Form fields
+  h+=`<div class="form-row"><div class="form-label">项目名称 *</div><input class="inp" id="pNm" value="${p?p.nm:""}" placeholder="如: PET纳米微球多规格攻关"></div>`;
+  h+=`<div class="form-row"><div class="form-label">优先级 *</div><select class="inp" id="pPr"><option value="P0"${p&&p.pr==="P0"?" selected":""}>🔴 P0 猛攻</option><option value="P1"${p&&p.pr==="P1"?" selected":""}>🟠 P1 顺手</option><option value="Done"${p&&p.pr==="Done"?" selected":""}>✅ 已完成</option></select></div>`;
+  h+=`<div class="form-row"><div class="form-label">阶段</div><input class="inp" id="pPh" value="${p?p.ph:""}" placeholder="如: Week 1-2"></div>`;
+  h+=`<div class="form-row"><div class="form-label">状态</div><select class="inp" id="pSt"><option value="待启动"${p&&p.st==="待启动"?" selected":""}>待启动</option><option value="进行中"${p&&p.st==="进行中"?" selected":""}>进行中</option><option value="已完成"${p&&p.st==="已完成"?" selected":""}>已完成</option><option value="待包装"${p&&p.st==="待包装"?" selected":""}>待包装</option></select></div>`;
+  h+=`<div class="form-row"><div class="form-label">目标描述</div><input class="inp" id="pTg" value="${p?p.tg:""}" placeholder="如: 300-500nm(PVP K90)+500-1μm(乳化法)"></div>`;
+  h+=`<div class="form-row"><div class="form-label">备注</div><textarea class="inp" id="pNt" rows="2" style="resize:vertical" placeholder="可选备注">${p?p.nt||"":""}</textarea></div>`;
+  if(isNew){
+    h+=`<button class="btn" style="background:#6366f1" onclick="doAddPipe()">确认新增</button>`;
+  } else {
+    h+=`<button class="btn" style="background:#f59e0b" onclick="doEditPipe(${p.id})">保存修改</button>`;
+  }
+  h+=`</div>`;return h;
+}
+
+function getPipeForm(){
+  const nm=document.getElementById("pNm").value.trim();
+  if(!nm){alert("请填写项目名称");return null;}
+  return{nm,pr:document.getElementById("pPr").value,ph:document.getElementById("pPh").value.trim(),st:document.getElementById("pSt").value,tg:document.getElementById("pTg").value.trim(),nt:document.getElementById("pNt").value.trim()};
+}
+
+function doAddPipe(){
+  const d=getPipeForm();if(!d)return;
+  pipe.push({id:nextPipeId++,...d});
+  pipeEditId=null;render();
+}
+
+function doEditPipe(id){
+  const d=getPipeForm();if(!d)return;
+  const p=pipe.find(x=>x.id===id);if(!p)return;
+  Object.assign(p,d);
+  pipeEditId=null;render();
+}
+
+function delPipe(id){
+  const p=pipe.find(x=>x.id===id);
+  const name=p?p.nm:"此项目";
+  const ov=document.createElement("div");ov.className="overlay";ov.id="delPipeOv";
+  ov.innerHTML=`<div class="modal" style="text-align:center;padding:30px">
+    <div style="font-size:40px;margin-bottom:12px">🗑️</div>
+    <div style="font-size:15px;font-weight:700;color:#fff;margin-bottom:8px">确认删除研发项目？</div>
+    <div style="font-size:13px;color:#9ca3af;margin-bottom:20px">「<span style="color:#f87171">${name}</span>」</div>
+    <div style="display:flex;gap:10px">
+      <button class="btn" style="background:#374151;flex:1" onclick="document.getElementById('delPipeOv').remove()">取消</button>
+      <button class="btn" style="background:#dc2626;flex:1" onclick="confirmDelPipe(${id})">确认删除</button>
+    </div>
+  </div>`;
+  document.body.appendChild(ov);
+}
+function confirmDelPipe(id){
+  document.getElementById("delPipeOv").remove();
+  pipe=pipe.filter(p=>p.id!==id);
+  render();
+}
+
+function cyclePipe(pid){const p=pipe.find(x=>x.id===pid);if(!p)return;const c={"待启动":"进行中","进行中":"已完成","已完成":"待启动","待包装":"已完成"};p.st=c[p.st]||"进行中";render();}
+
+// ═══ SYNC PAGE ═══
+async function saveSBConfigFromForm(){
+  const url=document.getElementById("sbUrl").value.trim();
+  const anonKey=document.getElementById("sbAnonKey").value.trim();
+  if(!url||!anonKey){alert("请填写 Project URL 和 anon key");return;}
+  const cfg={url,anonKey};
+  saveSBConfig(cfg);
+  const ok=await initSupabase(cfg);
+  if(ok){
+    saveState();
+    alert("Supabase 连接成功！数据已同步到云端。");
+    render();
+  }else{
+    localStorage.removeItem(SB_KEY);
+    alert("连接失败，请检查配置信息，并确认已创建数据表。");
+  }
+}
+function disconnectSB(){
+  const ov=document.createElement("div");ov.className="overlay";ov.id="discOv";
+  ov.innerHTML=`<div class="modal" style="text-align:center;padding:30px">
+    <div style="font-size:40px;margin-bottom:12px">🔌</div>
+    <div style="font-size:15px;font-weight:700;color:#fff;margin-bottom:8px">断开云同步？</div>
+    <div style="font-size:13px;color:#9ca3af;margin-bottom:20px">数据仍保留在本地浏览器中</div>
+    <div style="display:flex;gap:10px">
+      <button class="btn" style="background:#374151;flex:1" onclick="document.getElementById('discOv').remove()">取消</button>
+      <button class="btn" style="background:#f59e0b;flex:1" onclick="confirmDisconnect()">确认断开</button>
+    </div>
+  </div>`;
+  document.body.appendChild(ov);
+}
+function confirmDisconnect(){
+  document.getElementById("discOv").remove();
+  localStorage.removeItem(SB_KEY);
+  if(sbPollTimer)clearInterval(sbPollTimer);
+  sbConnected=false;sbClient=null;
+  render();
+}
+
+function rSync(){
+  const dataSize=(JSON.stringify({items,logs:allLogs,pipe}).length/1024).toFixed(1);
+  const hasSB=!!getSBConfig();
+  let h=`<div style="padding:16px"><div style="font-size:17px;font-weight:700;color:#fff;margin-bottom:4px">☁ 数据同步</div>`;
+  h+=`<div style="font-size:11px;color:#6b7280;margin-bottom:16px">Supabase 云同步 · 国内可用 · 多人协同</div>`;
+
+  // Connection status
+  h+=`<div class="card" style="cursor:default;border-color:${sbConnected?"#059669":"#2a2e3e"}"><div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><div style="width:10px;height:10px;border-radius:50%;background:${sbConnected?"#34d399":"#6b7280"};${sbConnected?"box-shadow:0 0 8px #34d39980;":""}"></div><span style="font-size:13px;font-weight:600;color:${sbConnected?"#34d399":"#9ca3af"}">${sbConnected?"☁ Supabase 已连接 · 每5秒自动同步":"未连接云数据库"}</span></div>`;
+  h+=`<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;font-size:11px;text-align:center">`;
+  h+=`<div><div style="font-size:18px;font-weight:700;color:#fff">${items.length}</div><div style="color:#6b7280">产品</div></div>`;
+  h+=`<div><div style="font-size:18px;font-weight:700;color:#fff">${pipe.length}</div><div style="color:#6b7280">研发项目</div></div>`;
+  h+=`<div><div style="font-size:18px;font-weight:700;color:#fff">${allLogs.length}</div><div style="color:#6b7280">操作记录</div></div>`;
+  h+=`</div>`;
+  h+=`<div style="margin-top:8px;padding-top:8px;border-top:1px solid #1e2130;font-size:10px;color:#6b7280">上次同步: ${lastSync||"尚未保存"} · ${dataSize} KB</div></div>`;
+
+  if(!hasSB){
+    h+=`<div class="card" style="cursor:default;border-color:#6366f1"><div style="font-size:13px;font-weight:600;color:#34d399;margin-bottom:10px">⚡ 配置 Supabase（一次性，5分钟）</div>`;
+    h+=`<div style="font-size:11px;color:#9ca3af;line-height:1.8;margin-bottom:12px">`;
+    h+=`<div style="margin-bottom:8px"><span style="color:#fbbf24;font-weight:600">Step 1</span> 打开 <span style="color:#60a5fa">supabase.com</span> → 用 GitHub 账号登录（免费）</div>`;
+    h+=`<div style="margin-bottom:8px"><span style="color:#fbbf24;font-weight:600">Step 2</span> New Project → 名称填 <span style="color:#34d399">rigor-inventory</span> → 设密码 → Create</div>`;
+    h+=`<div style="margin-bottom:8px"><span style="color:#fbbf24;font-weight:600">Step 3</span> 左侧 <span style="color:#60a5fa">SQL Editor</span> → 粘贴下面的建表语句 → 点 <span style="color:#34d399">Run</span></div>`;
+    h+=`</div>`;
+    h+=`<div style="background:#0d1117;border:1px solid #1e2130;border-radius:8px;padding:12px;margin-bottom:12px;font-family:monospace;font-size:11px;color:#7dd3fc;white-space:pre-wrap;word-break:break-all;user-select:all">create table rigor_inventory (
+  id bigint generated always as identity primary key,
+  data_key text unique not null default 'main',
+  payload jsonb,
+  updated_at timestamptz default now()
+);
+
+-- 自动更新时间戳
+create or replace function update_timestamp()
+returns trigger as $$
+begin
+  new.updated_at = now();
+  return new;
+end;
+$$ language plpgsql;
+
+create trigger set_timestamp
+  before update on rigor_inventory
+  for each row execute function update_timestamp();
+
+-- 开放读写权限
+alter table rigor_inventory enable row level security;
+create policy "Allow all" on rigor_inventory for all using (true) with check (true);</div>`;
+    h+=`<div style="font-size:11px;color:#9ca3af;line-height:1.8;margin-bottom:12px">`;
+    h+=`<div><span style="color:#fbbf24;font-weight:600">Step 4</span> 左侧 <span style="color:#60a5fa">Project Settings → API</span> → 复制下面两个值</div>`;
+    h+=`</div>`;
+    h+=`<div class="form-row"><div class="form-label">Project URL *</div><input class="inp" id="sbUrl" placeholder="如 https://xxxx.supabase.co"></div>`;
+    h+=`<div class="form-row"><div class="form-label">anon public key *</div><input class="inp" id="sbAnonKey" placeholder="粘贴 anon key（很长的一串）"></div>`;
+    h+=`<button class="btn" style="background:#34d399;color:#000" onclick="saveSBConfigFromForm()">连接 Supabase</button></div>`;
+  } else {
+    h+=`<div class="card" style="cursor:default;border-color:#059669"><div style="font-size:13px;font-weight:600;color:#34d399;margin-bottom:8px">✅ Supabase 已配置</div>`;
+    h+=`<div style="font-size:11px;color:#9ca3af;margin-bottom:6px">你和同事打开同一个网址，数据每5秒自动同步。一方修改，另一方几秒后自动看到。</div>`;
+    h+=`<div style="font-size:10px;color:#6b7280;margin-bottom:10px;padding:6px 8px;background:#111318;border-radius:6px">${getSBConfig().url||"—"}</div>`;
+    h+=`<div style="display:flex;gap:8px"><button class="btn" style="background:#059669;flex:1" onclick="pushToCloud().then(()=>alert('已推送到云端'))">手动同步</button><button class="btn" style="background:#374151;flex:1" onclick="disconnectSB()">断开连接</button></div></div>`;
+  }
+
+  // Password management
+  h+=`<div class="card" style="cursor:default"><div style="font-size:13px;font-weight:600;color:#fbbf24;margin-bottom:8px">🔒 访问密码</div>`;
+  h+=`<div style="font-size:12px;color:#9ca3af;margin-bottom:10px">默认密码: <span style="color:#818cf8;font-family:monospace">rigor2026</span>，建议修改</div>`;
+  h+=`<button class="btn" style="background:#92400e" onclick="openChangePwd()">修改登录密码</button></div>`;
+
+  h+=`<div class="card" style="cursor:default"><div style="font-size:13px;font-weight:600;color:#9ca3af;margin-bottom:8px">💾 备份 & 恢复</div>`;
+  h+=`<div style="display:flex;gap:8px;margin-bottom:8px"><button class="btn" style="background:#1e3a5f;flex:1" onclick="exportData()">📤 导出 JSON</button><button class="btn" style="background:#1e2130;border:1px solid #2a2e3e;flex:1" onclick="importData()">📥 导入 JSON</button></div>`;
+  h+=`<button class="btn" style="background:#5c1a1a;margin-top:4px" onclick="resetToDefault()">⚠️ 恢复初始数据</button></div>`;
+
+  h+=`</div>`;return h;
+}
+
+render();
+</script></body></html>
